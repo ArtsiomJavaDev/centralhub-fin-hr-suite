@@ -1,7 +1,7 @@
 # Security Policy
 
-CentralHub / ImporterWaPro handles payroll-adjacent data and integrates with
-CRM, WaPro SQL Server, and secure credential storage. Security issues should be
+CentralHub handles payroll-adjacent data and integrates with
+CRM, payroll SQL Server, and secure credential storage. Security issues should be
 treated as private by default.
 
 ## Sensitive Data
@@ -10,7 +10,7 @@ Do not include any of the following in issues, pull requests, screenshots, logs,
 fixtures, or commits:
 
 - employee names, PESEL numbers, addresses, contract numbers, or payroll amounts,
-- CRM exports, WaPro exports, generated Excel files, import logs, or crash logs,
+- CRM exports, Polish HR and payroll system exports, generated Excel files, import logs, or crash logs,
 - server addresses, hostnames, SSH usernames, SSH keys, database credentials,
 - API tokens, encrypted blobs from another machine, or `config.ini` contents.
 
@@ -31,5 +31,5 @@ Secrets are expected to live outside tracked source code:
 ## Supported Environment
 
 The production target is Windows with Python 3.11+ / 3.12, ODBC Driver 17 for SQL
-Server, and access to approved CRM/WaPro resources.
+Server, and access to approved CRM and payroll system resources.
 

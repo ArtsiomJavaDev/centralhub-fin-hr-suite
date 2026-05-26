@@ -26,7 +26,7 @@ body:
       options:
         - CRM automation
         - Excel import
-        - WaPro DB
+        - payroll database
         - Tax / ZUS calculation
         - Reporting / export
         - UI
