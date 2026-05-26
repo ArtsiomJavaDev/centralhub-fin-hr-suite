@@ -396,7 +396,7 @@ def _crm_layout_match(
     crm_name: str,
     crm_surname: str,
 ) -> Optional[str]:
-    """'ok' | 'wapro_swapped' | 'crm_swapped' | None if inconclusive."""
+    """'ok' | 'payroll_swapped' | 'crm_swapped' | None if inconclusive."""
     wi, wn = normalize_name(imie).lower(), normalize_name(nazwisko).lower()
     cn, cs = normalize_name(crm_name).lower(), normalize_name(crm_surname).lower()
     if not wi and not wn:
@@ -405,13 +405,13 @@ def _crm_layout_match(
         return None
 
     direct = (wi == cn or not cn) and (wn == cs or not cs) and (wi == cn or wn == cs)
-    cross_wapro = (wi == cs or not cs) and (wn == cn or not cn) and (wi == cs or wn == cn)
+    cross_payroll = (wi == cs or not cs) and (wn == cn or not cn) and (wi == cs or wn == cn)
 
-    if direct and not cross_wapro:
+    if direct and not cross_payroll:
         return "ok"
-    if cross_wapro and not direct:
-        return "wapro_swapped"
-    if direct and cross_wapro:
+    if cross_payroll and not direct:
+        return "payroll_swapped"
+    if direct and cross_payroll:
         return "ok"
     return None
 
@@ -421,7 +421,7 @@ def _primary_token(value: str) -> str:
     return parts[0] if parts else ""
 
 
-def _wapro_swap_score(
+def _payroll_swap_score(
     imie: str,
     nazwisko: str,
     corpus: LearnedNameCorpus,
@@ -481,7 +481,7 @@ def detect_swapped(
         if imie.lower() == nazwisko.lower() and imie:
             continue
 
-        swap_score, reasons = _wapro_swap_score(imie, nazwisko, corpus, freq)
+        swap_score, reasons = _payroll_swap_score(imie, nazwisko, corpus, freq)
 
         pesel_key = normalize_name(row.pesel)
         if crm_by_pesel and pesel_key and len(pesel_key) == 11 and pesel_key.isdigit():
@@ -489,7 +489,7 @@ def detect_swapped(
             if crm_pair:
                 crm_name, crm_surname = crm_pair
                 crm_match = _crm_layout_match(imie, nazwisko, crm_name, crm_surname)
-                if crm_match == "wapro_swapped":
+                if crm_match == "payroll_swapped":
                     reasons.append("crm")
                     swap_score = max(swap_score, 0.8)
                 elif crm_match == "ok":
@@ -518,7 +518,7 @@ def detect_swapped(
     return candidates
 
 
-def fetch_wapro_employees(engine: Engine) -> list[EmployeeNameRow]:
+def fetch_payroll_employees(engine: Engine) -> list[EmployeeNameRow]:
     query = text(
         """
         SELECT
@@ -545,7 +545,7 @@ def fetch_wapro_employees(engine: Engine) -> list[EmployeeNameRow]:
         ]
 
 
-def apply_wapro_swaps(
+def apply_payroll_swaps(
     engine: Engine,
     candidates: Iterable[SwapCandidate],
     *,

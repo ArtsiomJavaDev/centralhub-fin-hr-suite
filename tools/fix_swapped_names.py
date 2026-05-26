@@ -20,9 +20,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from db.config_loader import load_db_config
 from db.name_swap import (
-    apply_wapro_swaps,
+    apply_payroll_swaps,
     detect_swapped,
-    fetch_wapro_employees,
+    fetch_payroll_employees,
 )
 from db.service import DatabaseService
 
@@ -115,7 +115,7 @@ def main() -> int:
         return 1
     print(f"payroll system: {msg}")
 
-    rows = fetch_wapro_employees(service.engine)
+    rows = fetch_payroll_employees(service.engine)
     print(f"Załadowano {len(rows)} pracowników z imieniem lub nazwiskiem")
 
     crm_by_pesel = {} if args.no_crm else _load_crm_by_pesel()
@@ -172,7 +172,7 @@ def main() -> int:
         return 0
 
     if args.apply:
-        updated = apply_wapro_swaps(service.engine, candidates, dry_run=False)
+        updated = apply_payroll_swaps(service.engine, candidates, dry_run=False)
         print(f"\nZaktualizowano wierszy: {updated} / {len(candidates)}")
         if updated < len(candidates):
             print(

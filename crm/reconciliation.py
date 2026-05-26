@@ -43,7 +43,7 @@ class CrmBillCheck:
 
 
 @dataclass(frozen=True)
-class WaproRachunek:
+class PayrollRachunek:
     nr_rachunku: str
     data_wyplaty: date | None
     pesel: str = ""
@@ -57,31 +57,31 @@ class RachunkiReconciliation:
     tenant_id: int
     crm_paid_total: int = 0
     crm_importable_total: int = 0
-    wapro_month_total: int = 0
+    payroll_month_total: int = 0
     matched_any_date: int = 0
     matched_same_month: int = 0
-    date_mismatch: list[tuple[CrmBillCheck, WaproRachunek]] = field(default_factory=list)
-    crm_missing_in_wapro: list[CrmBillCheck] = field(default_factory=list)
-    wapro_month_not_in_crm_paid: list[WaproRachunek] = field(default_factory=list)
-    wapro_month_exists_in_crm_other_date: list[WaproRachunek] = field(default_factory=list)
+    date_mismatch: list[tuple[CrmBillCheck, PayrollRachunek]] = field(default_factory=list)
+    crm_missing_in_payroll: list[CrmBillCheck] = field(default_factory=list)
+    payroll_month_not_in_crm_paid: list[PayrollRachunek] = field(default_factory=list)
+    payroll_month_exists_in_crm_other_date: list[PayrollRachunek] = field(default_factory=list)
     crm_blocked: list[CrmBillCheck] = field(default_factory=list)
     api_requests: int = 0
 
     @property
     def hard_errors(self) -> int:
-        return len([item for item in self.crm_missing_in_wapro if item.status == "ok"])
+        return len([item for item in self.crm_missing_in_payroll if item.status == "ok"])
 
     @property
     def crm_missing_importable(self) -> list[CrmBillCheck]:
-        return [item for item in self.crm_missing_in_wapro if item.status == "ok"]
+        return [item for item in self.crm_missing_in_payroll if item.status == "ok"]
 
     @property
     def crm_missing_blocked(self) -> list[CrmBillCheck]:
-        return [item for item in self.crm_missing_in_wapro if item.status != "ok"]
+        return [item for item in self.crm_missing_in_payroll if item.status != "ok"]
 
     @property
     def explanatory_differences(self) -> int:
-        return len(self.date_mismatch) + len(self.wapro_month_exists_in_crm_other_date)
+        return len(self.date_mismatch) + len(self.payroll_month_exists_in_crm_other_date)
 
 
 def reconcile_rachunki(
@@ -106,9 +106,9 @@ def reconcile_rachunki(
         if str(row.get("bill_number") or "").strip()
     }
 
-    wapro_month = _load_wapro_month_rachunki(db_service, year, month)
-    wapro_month_by_nr = {r.nr_rachunku: r for r in wapro_month}
-    wapro_any_by_nr = _load_wapro_rachunki_by_numbers(db_service, crm_paid_nrs)
+    payroll_month = _load_payroll_month_rachunki(db_service, year, month)
+    payroll_month_by_nr = {r.nr_rachunku: r for r in payroll_month}
+    payroll_any_by_nr = _load_payroll_rachunki_by_numbers(db_service, crm_paid_nrs)
 
     report = RachunkiReconciliation(
         year=year,
@@ -116,29 +116,29 @@ def reconcile_rachunki(
         tenant_id=tenant_id,
         crm_paid_total=len(crm_paid_nrs),
         crm_importable_total=sum(1 for c in crm_checks if c.status == "ok"),
-        wapro_month_total=len(wapro_month_by_nr),
+        payroll_month_total=len(payroll_month_by_nr),
         api_requests=api_requests,
     )
     report.crm_blocked = [c for c in crm_checks if c.status != "ok"]
 
     for nr, crm_bill in crm_paid_by_nr.items():
-        wapro_row = wapro_any_by_nr.get(nr)
-        if wapro_row is None:
-            report.crm_missing_in_wapro.append(crm_bill)
+        payroll_row = payroll_any_by_nr.get(nr)
+        if payroll_row is None:
+            report.crm_missing_in_payroll.append(crm_bill)
             continue
         report.matched_any_date += 1
-        if nr in wapro_month_by_nr:
+        if nr in payroll_month_by_nr:
             report.matched_same_month += 1
         else:
-            report.date_mismatch.append((crm_bill, wapro_row))
+            report.date_mismatch.append((crm_bill, payroll_row))
 
-    for nr, wapro_row in wapro_month_by_nr.items():
+    for nr, payroll_row in payroll_month_by_nr.items():
         if nr in crm_paid_nrs:
             continue
         if nr in all_crm_bill_nrs:
-            report.wapro_month_exists_in_crm_other_date.append(wapro_row)
+            report.payroll_month_exists_in_crm_other_date.append(payroll_row)
         else:
-            report.wapro_month_not_in_crm_paid.append(wapro_row)
+            report.payroll_month_not_in_crm_paid.append(payroll_row)
 
     return report
 
@@ -251,11 +251,11 @@ def _build_crm_bill_checks(
     return checks
 
 
-def _load_wapro_month_rachunki(
+def _load_payroll_month_rachunki(
     db_service: DatabaseService,
     year: int,
     month: int,
-) -> list[WaproRachunek]:
+) -> list[PayrollRachunek]:
     sql = text(
         """
         SELECT LTRIM(RTRIM(ISNULL(u.NUMER_RACHUNKU, ''))) AS nr,
@@ -273,7 +273,7 @@ def _load_wapro_month_rachunki(
     with db_service.engine.connect() as conn:
         rows = conn.execute(sql, {"year": int(year), "month": int(month)}).all()
     return [
-        WaproRachunek(
+        PayrollRachunek(
             nr_rachunku=str(row[0]).strip(),
             data_wyplaty=row[1],
             pesel=str(row[2] or "").strip(),
@@ -283,12 +283,12 @@ def _load_wapro_month_rachunki(
     ]
 
 
-def _load_wapro_rachunki_by_numbers(
+def _load_payroll_rachunki_by_numbers(
     db_service: DatabaseService,
     nr_rachunki: Iterable[str],
-) -> dict[str, WaproRachunek]:
+) -> dict[str, PayrollRachunek]:
     clean = sorted({str(nr).strip() for nr in nr_rachunki if str(nr).strip()})
-    result: dict[str, WaproRachunek] = {}
+    result: dict[str, PayrollRachunek] = {}
     if not clean:
         return result
     with db_service.engine.connect() as conn:
@@ -312,7 +312,7 @@ def _load_wapro_rachunki_by_numbers(
                 nr = str(row[0]).strip()
                 result.setdefault(
                     nr,
-                    WaproRachunek(
+                    PayrollRachunek(
                         nr_rachunku=nr,
                         data_wyplaty=row[1],
                         pesel=str(row[2] or "").strip(),

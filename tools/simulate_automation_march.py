@@ -112,34 +112,34 @@ def main() -> int:
 
     print(f"  CRM paid bills:          {rachunki_report.crm_paid_total}")
     print(f"  CRM importable bills:    {rachunki_report.crm_importable_total}")
-    print(f"  payroll system month rachunki:    {rachunki_report.wapro_month_total}")
+    print(f"  payroll system month rachunki:    {rachunki_report.payroll_month_total}")
     print(f"  CRM found in payroll system any date: {rachunki_report.matched_any_date}")
     print(f"  Same month matches:      {rachunki_report.matched_same_month}")
     print(f"  Date mismatches:         {len(rachunki_report.date_mismatch)}")
-    print(f"  CRM missing in payroll system:    {len(rachunki_report.crm_missing_in_wapro)}")
+    print(f"  CRM missing in payroll system:    {len(rachunki_report.crm_missing_in_payroll)}")
     print(f"    importable missing:    {len(rachunki_report.crm_missing_importable)}")
     print(f"    blocked missing:       {len(rachunki_report.crm_missing_blocked)}")
     print(
         f"  payroll system month not in CRM paid month: "
-        f"{len(rachunki_report.wapro_month_not_in_crm_paid)}"
+        f"{len(rachunki_report.payroll_month_not_in_crm_paid)}"
     )
     print(
         f"  payroll system month exists in CRM other date: "
-        f"{len(rachunki_report.wapro_month_exists_in_crm_other_date)}"
+        f"{len(rachunki_report.payroll_month_exists_in_crm_other_date)}"
     )
-    if rachunki_report.crm_missing_in_wapro:
+    if rachunki_report.crm_missing_in_payroll:
         print("  Sample CRM missing in payroll system:")
-        for item in rachunki_report.crm_missing_in_wapro[:8]:
+        for item in rachunki_report.crm_missing_in_payroll[:8]:
             print(
                 f"    [{item.status}/{item.reason or 'ok'}] "
                 f"{item.nr_rachunku} | {item.worker_name} | PESEL={item.pesel}"
             )
     if rachunki_report.date_mismatch:
         print("  Sample date mismatches:")
-        for crm_bill, wapro_bill in rachunki_report.date_mismatch[:8]:
+        for crm_bill, payroll_bill in rachunki_report.date_mismatch[:8]:
             print(
                 f"    {crm_bill.nr_rachunku}: CRM paid={crm_bill.payment_date} "
-                f"payroll system DATA_WYPLATY={wapro_bill.data_wyplaty}"
+                f"payroll system DATA_WYPLATY={payroll_bill.data_wyplaty}"
             )
 
   # ── Step 2: PESEL check ──────────────────────────────────────────────────

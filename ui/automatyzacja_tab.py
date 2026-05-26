@@ -1164,23 +1164,23 @@ class AutomatyzacjaTab(QWidget):
                     "Rachunki 1:1 CRM↔payroll system: "
                     f"CRM paid={rachunki_report.crm_paid_total}, "
                     f"CRM importable={rachunki_report.crm_importable_total}, "
-                    f"payroll system month={rachunki_report.wapro_month_total}, "
+                    f"payroll system month={rachunki_report.payroll_month_total}, "
                     f"found-any-date={rachunki_report.matched_any_date}, "
                     f"same-month={rachunki_report.matched_same_month}, "
                     f"date-mismatch={len(rachunki_report.date_mismatch)}, "
-                    f"missing-in-payroll system={len(rachunki_report.crm_missing_in_wapro)} "
+                    f"missing-in-payroll system={len(rachunki_report.crm_missing_in_payroll)} "
                     f"(importable={len(rachunki_report.crm_missing_importable)}, "
                     f"blocked={len(rachunki_report.crm_missing_blocked)})"
                 )
                 if rachunki_report.date_mismatch:
-                    for crm_bill, wapro_bill in rachunki_report.date_mismatch[:10]:
+                    for crm_bill, payroll_bill in rachunki_report.date_mismatch[:10]:
                         self._log(
                             f"  DATA RÓŻNA: {crm_bill.nr_rachunku} "
                             f"CRM paid={crm_bill.payment_date}, "
-                            f"payroll system DATA_WYPLATY={wapro_bill.data_wyplaty}"
+                            f"payroll system DATA_WYPLATY={payroll_bill.data_wyplaty}"
                         )
-                if rachunki_report.crm_missing_in_wapro:
-                    for item in rachunki_report.crm_missing_in_wapro[:10]:
+                if rachunki_report.crm_missing_in_payroll:
+                    for item in rachunki_report.crm_missing_in_payroll[:10]:
                         self._log(
                             f"  CRM NIE MA W PAYROLL_DB [{item.status}/{item.reason or 'ok'}]: "
                             f"{item.nr_rachunku} {item.worker_name} PESEL={item.pesel}"

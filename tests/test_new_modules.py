@@ -36,7 +36,7 @@ from crm.onboarding import (
 from crm.reconciliation import (
     CrmBillCheck,
     RachunkiReconciliation,
-    WaproRachunek,
+    PayrollRachunek,
 )
 from importer.utils import _CLARION_BASE, _safe_clarion_days
 
@@ -591,22 +591,22 @@ def _empty_report() -> RachunkiReconciliation:
 class TestRachunkiReconciliationProperties:
     def test_hard_errors_counts_only_ok_missing(self):
         r = _empty_report()
-        r.crm_missing_in_wapro = [_ok_bill("NR/001"), _ok_bill("NR/002"), _blocked_bill("NR/003")]
+        r.crm_missing_in_payroll = [_ok_bill("NR/001"), _ok_bill("NR/002"), _blocked_bill("NR/003")]
         assert r.hard_errors == 2
 
     def test_crm_missing_importable(self):
         r = _empty_report()
-        r.crm_missing_in_wapro = [_ok_bill("NR/001"), _blocked_bill("NR/002")]
+        r.crm_missing_in_payroll = [_ok_bill("NR/001"), _blocked_bill("NR/002")]
         assert len(r.crm_missing_importable) == 1
 
     def test_crm_missing_blocked(self):
         r = _empty_report()
-        r.crm_missing_in_wapro = [_ok_bill("NR/001"), _blocked_bill("NR/002"), _blocked_bill("NR/003")]
+        r.crm_missing_in_payroll = [_ok_bill("NR/001"), _blocked_bill("NR/002"), _blocked_bill("NR/003")]
         assert len(r.crm_missing_blocked) == 2
 
     def test_explanatory_differences(self):
         r = _empty_report()
-        wapro = WaproRachunek(nr_rachunku="NR/X", data_wyplaty=None)
-        r.date_mismatch = [(_ok_bill("NR/X"), wapro)]
-        r.wapro_month_exists_in_crm_other_date = [wapro]
+        payroll = PayrollRachunek(nr_rachunku="NR/X", data_wyplaty=None)
+        r.date_mismatch = [(_ok_bill("NR/X"), payroll)]
+        r.payroll_month_exists_in_crm_other_date = [payroll]
         assert r.explanatory_differences == 2
