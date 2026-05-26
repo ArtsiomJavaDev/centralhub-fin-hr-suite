@@ -27,6 +27,8 @@ _IMPORT_FILES_DIR = _APP_DIR / "ImportFiles"
 # Tables loaded for one monthly report (order matters for progress messages).
 _REPORT_TABLES = (
     "bills",
+    "salary_requests",
+    "users",
     "contracts_zlicen",
     "contracts_dzielo",
     "employees",
@@ -42,6 +44,8 @@ class CrmApiError(RuntimeError):
 class FetchStats:
     bills_total: int
     bills_in_period: int
+    salary_requests: int
+    users: int
     contracts_zlicen: int
     contracts_dzielo: int
     employees: int
@@ -170,11 +174,15 @@ def fetch_report_dataframe_api(
 
     for idx, table in enumerate(_REPORT_TABLES):
         _progress(f"Pobieranie {table}…", idx, total_steps)
-        if table == "bills":
-            rows = client.fetch_table(table, date_from=date_from, date_to=date_to)
-        else:
-            rows = client.fetch_table(table)
-        if tid:
+        # Do not pass date_from/date_to for bills here. The CRM API date
+        # parameters are not based on account_till, so month-scoped requests
+        # miss many older/future-created bills. We fetch bills broadly and
+        # filter locally by bill.account_till in _build_uduz04_rows.
+        rows = client.fetch_table(table)
+        # `users` rows do not expose tenant_id. Tenant scoping is already
+        # enforced by bills/salary_requests/contracts, so filtering users here
+        # would drop every physical contractor.
+        if tid and table != "users":
             rows = _filter_tenant(rows, tid)
         table_data[table] = rows
 
@@ -182,6 +190,8 @@ def fetch_report_dataframe_api(
 
     raw, stats = _build_uduz04_rows(
         bills=table_data["bills"],
+        salary_requests=table_data["salary_requests"],
+        users=table_data["users"],
         contracts_z=table_data["contracts_zlicen"],
         contracts_d=table_data["contracts_dzielo"],
         employees=table_data["employees"],
@@ -219,6 +229,8 @@ def save_api_audit_files(
 def _build_uduz04_rows(
     *,
     bills: list[dict[str, Any]],
+    salary_requests: list[dict[str, Any]],
+    users: list[dict[str, Any]],
     contracts_z: list[dict[str, Any]],
     contracts_d: list[dict[str, Any]],
     employees: list[dict[str, Any]],
@@ -228,6 +240,8 @@ def _build_uduz04_rows(
     tenant_id: int,
     api_requests: int,
 ) -> tuple[pd.DataFrame, FetchStats]:
+    sr_by_id = _by_id(salary_requests)
+    users_by_id = _by_id(users)
     z_by_id = _by_id(contracts_z)
     d_by_id = _by_id(contracts_d)
     emp_by_id = _by_id(employees)
@@ -242,7 +256,13 @@ def _build_uduz04_rows(
     skipped_legal_entity = 0
 
     for bill in bills:
-        if not _date_in_month(bill.get("account_till"), year, month):
+        salary_request = sr_by_id.get(bill.get("salary_request_id"))
+        payment_date = _first_nonempty(
+            salary_request.get("paid_at") if salary_request else None,
+            bill.get("account_till"),
+            bill.get("account_from"),
+        )
+        if not _date_in_month(payment_date, year, month):
             continue
         bills_in_period += 1
 
@@ -262,7 +282,14 @@ def _build_uduz04_rows(
             skipped_without_contract += 1
             continue
 
-        person = _resolve_person(contract, emp_by_id, cust_by_id)
+        person = _resolve_bill_person(
+            bill=bill,
+            contract=contract,
+            salary_requests_by_id=sr_by_id,
+            users_by_id=users_by_id,
+            employees_by_id=emp_by_id,
+            customers_by_id=cust_by_id,
+        )
         if person is None:
             skipped_without_person += 1
             continue
@@ -310,7 +337,7 @@ def _build_uduz04_rows(
                 _kup_display(bill.get("kup")),
                 _first_nonempty(contract.get("start_date"), bill.get("account_from")),
                 round(brutto - netto, 2),
-                _first_nonempty(bill.get("account_till"), bill.get("account_from")),
+                payment_date,
                 _money(bill.get("ppk_kwota") or bill.get("ppk") or 0),
                 # Pos 13: PIT rate from API (vat field).
                 _money(bill.get("vat")),
@@ -332,6 +359,8 @@ def _build_uduz04_rows(
     stats = FetchStats(
         bills_total=len(bills),
         bills_in_period=bills_in_period,
+        salary_requests=len(salary_requests),
+        users=len(users),
         contracts_zlicen=len(contracts_z),
         contracts_dzielo=len(contracts_d),
         employees=len(employees),
@@ -376,6 +405,38 @@ def _resolve_person(
     if client_id in cust_by_id:
         return cust_by_id[client_id]
     return None
+
+
+def _resolve_bill_person(
+    *,
+    bill: dict[str, Any],
+    contract: dict[str, Any],
+    salary_requests_by_id: dict[Any, dict[str, Any]],
+    users_by_id: dict[Any, dict[str, Any]],
+    employees_by_id: dict[Any, dict[str, Any]],
+    customers_by_id: dict[Any, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Resolve the real physical person behind a bill.
+
+    For most external contractors the bill points to salary_requests, and the
+    salary request creator is the CRM `users` row containing PESEL, birth date,
+    passport and address. The contract's client_id often points to `customers`,
+    where legal entities have NIP/VAT in tax_number rather than PESEL.
+
+    Fallback to the old contract employee/customer route for legacy rows.
+    """
+    salary_request = salary_requests_by_id.get(bill.get("salary_request_id"))
+    user_id = salary_request.get("created_by") if salary_request else None
+    if user_id in users_by_id:
+        user = users_by_id[user_id]
+        # In many rows created_by is the real contractor and `users` carries
+        # PESEL/passport/address. In other rows created_by is only a CRM
+        # operator/account manager (often no PESEL). Do not treat those as the
+        # contractor; fall back to the contract person instead.
+        user_pesel = _normalize_pesel(user.get("pesel_number") or user.get("pesel"))
+        if user_pesel and _is_valid_pesel(user_pesel):
+            return user
+    return _resolve_person(contract, employees_by_id, customers_by_id)
 
 
 def _first_nonempty(*values: Any) -> Any:

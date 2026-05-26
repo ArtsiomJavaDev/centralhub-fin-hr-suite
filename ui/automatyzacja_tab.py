@@ -50,6 +50,7 @@ from crm.settings import load_crm_settings, load_crm_api_settings, save_crm_api_
 from crm.mysql_client import test_connection as crm_test_connection, fetch_report_dataframe
 from crm.api_client import CrmApiClient, fetch_report_dataframe_api, save_api_audit_files
 from crm.checker import check_pesels_in_db, verify_financials, CheckPeselResult, VerifyResult
+from crm.reconciliation import reconcile_rachunki
 from crm import history as _hist
 from crm.history import ImportHistoryRecord
 from database import DatabaseService, DbConfig
@@ -136,6 +137,7 @@ class AutomatyzacjaTab(QWidget):
         self._last_import_ids: List[int] = []
         self._last_history_id: Optional[str] = None
         self._log_lines: list[str] = []
+        self._auto_onboard_in_progress = False
 
         # Worker references (prevent GC)
         self._thread = None
@@ -332,7 +334,7 @@ class AutomatyzacjaTab(QWidget):
         self._btn_onboard = QPushButton(self._t("auto.step2.onboard_btn"))
         self._btn_onboard.setEnabled(False)
         self._btn_onboard.setVisible(False)
-        self._btn_onboard.clicked.connect(self._on_onboard_missing)
+        self._btn_onboard.clicked.connect(lambda: self._on_onboard_missing(auto=False))
         g2l.addWidget(self._btn_onboard)
 
         self._lbl_onboard_status = QLabel("")
@@ -853,9 +855,10 @@ class AutomatyzacjaTab(QWidget):
 
     # ─── Step 2: PESEL check ──────────────────────────────────────────────────
 
-    def _on_check_pesels(self) -> None:
+    def _on_check_pesels(self, checked: bool = False, *, auto_onboard: bool = True) -> None:
         if self._df_formatted is None:
             return
+        del checked
         self._log("Sprawdzanie pracowników w bazie WaProGang…")
         try:
             svc = DatabaseService(self._db_config_provider())
@@ -900,6 +903,17 @@ class AutomatyzacjaTab(QWidget):
             )
             self._lbl_onboard_status.setText(self._t("auto.step2.onboard_hint"))
             self._lbl_onboard_status.setStyleSheet(f"color:{_COLOR_MUTED};font-size:9pt;")
+
+            is_api_data = (
+                "__audit_data_source" in self._df_formatted.columns
+                and (self._df_formatted["__audit_data_source"].astype(str).str.lower() == "api").any()
+            )
+            if auto_onboard and is_api_data and not self._auto_onboard_in_progress:
+                self._log(
+                    "Auto-onboarding: wykryto brakujących pracowników w API — "
+                    "próbuję założyć karty z danych CRM."
+                )
+                self._on_onboard_missing(auto=True)
         else:
             self._missing_table.setVisible(False)
             self._btn_onboard.setVisible(False)
@@ -916,11 +930,21 @@ class AutomatyzacjaTab(QWidget):
 
     # ─── Step 2b: Auto-onboard missing employees from CRM ───────────────────
 
-    def _on_onboard_missing(self) -> None:
+    def _on_onboard_missing(self, auto: bool = False) -> None:
         if self._check_result is None or not self._check_result.missing_rows:
             return
+        if self._auto_onboard_in_progress:
+            return
+        self._auto_onboard_in_progress = True
         self._btn_onboard.setEnabled(False)
-        self._log(self._t("auto.step2.onboard.start").format(count=len(self._check_result.missing_rows)))
+        if auto:
+            self._log(
+                self._t("auto.step2.onboard.auto_start").format(
+                    count=len(self._check_result.missing_rows)
+                )
+            )
+        else:
+            self._log(self._t("auto.step2.onboard.start").format(count=len(self._check_result.missing_rows)))
 
         try:
             from crm.onboarding import (
@@ -939,6 +963,7 @@ class AutomatyzacjaTab(QWidget):
             self._lbl_onboard_status.setText(f"Błąd: {exc}")
             self._lbl_onboard_status.setStyleSheet(f"color:{_COLOR_ERR};font-size:9pt;")
             self._btn_onboard.setEnabled(True)
+            self._auto_onboard_in_progress = False
             return
 
         self._log(
@@ -966,22 +991,33 @@ class AutomatyzacjaTab(QWidget):
             self._lbl_onboard_status.setText(self._t("auto.step2.onboard.nothing"))
             self._lbl_onboard_status.setStyleSheet(f"color:{_COLOR_WARN};font-size:9pt;")
             self._btn_onboard.setEnabled(False)
+            self._auto_onboard_in_progress = False
             return
 
-        confirm = QMessageBox.question(
-            self,
-            self._t("auto.step2.onboard.confirm_title"),
-            self._t("auto.step2.onboard.confirm_body").format(
-                ready=len(plan.can_onboard),
-                blocked=len(plan.blocked),
-                missing=len(plan.not_found_pesels),
-            ),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
-        )
-        if confirm != QMessageBox.StandardButton.Yes:
-            self._btn_onboard.setEnabled(True)
-            return
+        if not auto:
+            confirm = QMessageBox.question(
+                self,
+                self._t("auto.step2.onboard.confirm_title"),
+                self._t("auto.step2.onboard.confirm_body").format(
+                    ready=len(plan.can_onboard),
+                    blocked=len(plan.blocked),
+                    missing=len(plan.not_found_pesels),
+                ),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if confirm != QMessageBox.StandardButton.Yes:
+                self._btn_onboard.setEnabled(True)
+                self._auto_onboard_in_progress = False
+                return
+        else:
+            self._log(
+                self._t("auto.step2.onboard.auto_confirm").format(
+                    ready=len(plan.can_onboard),
+                    blocked=len(plan.blocked),
+                    missing=len(plan.not_found_pesels),
+                )
+            )
 
         try:
             svc = DatabaseService(self._db_config_provider())
@@ -1002,6 +1038,7 @@ class AutomatyzacjaTab(QWidget):
             self._lbl_onboard_status.setText(f"Błąd: {exc}")
             self._lbl_onboard_status.setStyleSheet(f"color:{_COLOR_ERR};font-size:9pt;")
             self._btn_onboard.setEnabled(True)
+            self._auto_onboard_in_progress = False
             return
 
         self._log(
@@ -1019,7 +1056,8 @@ class AutomatyzacjaTab(QWidget):
         self._lbl_onboard_status.setStyleSheet(f"color:{_COLOR_OK};font-size:9pt;font-weight:600;")
 
         # Re-run PESEL check so the user immediately sees the updated state.
-        self._on_check_pesels()
+        self._auto_onboard_in_progress = False
+        self._on_check_pesels(auto_onboard=False)
 
     def _current_clarion_data_od(self) -> int:
         """First day of the API report period in Clarion format (days since 1800-12-28)."""
@@ -1109,6 +1147,44 @@ class AutomatyzacjaTab(QWidget):
             ok, msg = svc.test_connection()
             if not ok:
                 raise RuntimeError(f"Brak połączenia: {msg}")
+            is_api_data = (
+                "__audit_data_source" in self._df_formatted.columns
+                and (self._df_formatted["__audit_data_source"].astype(str).str.lower() == "api").any()
+            )
+            if is_api_data:
+                tenant_id = int(self._api_tenant.currentData() or 0)
+                rachunki_report = reconcile_rachunki(
+                    settings=load_crm_api_settings(),
+                    db_service=svc,
+                    year=int(self._api_year.value()),
+                    month=int(self._api_month.value()),
+                    tenant_id=tenant_id,
+                )
+                self._log(
+                    "Rachunki 1:1 CRM↔WaPro: "
+                    f"CRM paid={rachunki_report.crm_paid_total}, "
+                    f"CRM importable={rachunki_report.crm_importable_total}, "
+                    f"WaPro month={rachunki_report.wapro_month_total}, "
+                    f"found-any-date={rachunki_report.matched_any_date}, "
+                    f"same-month={rachunki_report.matched_same_month}, "
+                    f"date-mismatch={len(rachunki_report.date_mismatch)}, "
+                    f"missing-in-WaPro={len(rachunki_report.crm_missing_in_wapro)} "
+                    f"(importable={len(rachunki_report.crm_missing_importable)}, "
+                    f"blocked={len(rachunki_report.crm_missing_blocked)})"
+                )
+                if rachunki_report.date_mismatch:
+                    for crm_bill, wapro_bill in rachunki_report.date_mismatch[:10]:
+                        self._log(
+                            f"  DATA RÓŻNA: {crm_bill.nr_rachunku} "
+                            f"CRM paid={crm_bill.payment_date}, "
+                            f"WaPro DATA_WYPLATY={wapro_bill.data_wyplaty}"
+                        )
+                if rachunki_report.crm_missing_in_wapro:
+                    for item in rachunki_report.crm_missing_in_wapro[:10]:
+                        self._log(
+                            f"  CRM NIE MA W WAPRO [{item.status}/{item.reason or 'ok'}]: "
+                            f"{item.nr_rachunku} {item.worker_name} PESEL={item.pesel}"
+                        )
             df_clean = df_to_export(self._df_formatted)
             mapped_df = map_columns(
                 df_clean, AUTO_MAPPING, UMOWY_MIXED_IMPORT_PROFILE,

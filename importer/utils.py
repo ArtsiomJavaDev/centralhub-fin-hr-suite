@@ -22,6 +22,8 @@ def _is_reasonable_year(ts: pd.Timestamp) -> bool:
 
 
 def _safe_clarion_days(ts: pd.Timestamp) -> int:
+    if ts.tz is not None:
+        ts = ts.tz_localize(None)
     return int((ts.normalize() - _CLARION_BASE).days)
 
 
