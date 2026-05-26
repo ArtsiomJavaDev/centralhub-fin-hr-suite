@@ -80,13 +80,20 @@ def _normalize_urzad_code(value: Any) -> str:
     """Polish urząd code is 4-digit. CRM strips leading zero (e.g. '840').
 
     Returns the value padded to 4 digits with leading zeros, or '' if not a
-    valid numeric token.
+    valid numeric token. Handles float-string representations like '840.0'
+    (which pandas may produce when reading numeric CRM fields).
     """
     if value is None:
         return ""
     text = str(value).strip()
     if not text:
         return ""
+    # Handle float representations like "840.0" → strip decimal part first
+    if "." in text:
+        try:
+            text = str(int(float(text)))
+        except (ValueError, OverflowError):
+            pass
     digits = "".join(ch for ch in text if ch.isdigit())
     if not digits:
         return ""
@@ -208,7 +215,7 @@ def _index_customers_by_pesel(rows: Iterable[dict]) -> dict[str, dict]:
     return index
 
 
-def _build_from_employee(pesel: str, emp: dict) -> OnboardingCandidate:
+def _build_from_employee(pesel: str, emp: dict, *, source: str = "employees") -> OnboardingCandidate:
     name = _first_nonempty(emp.get("name"), emp.get("first_name"))
     surname = _first_nonempty(emp.get("surname"), emp.get("last_name"))
     passport = _first_nonempty(emp.get("passport_number"), emp.get("passport"))
@@ -228,7 +235,7 @@ def _build_from_employee(pesel: str, emp: dict) -> OnboardingCandidate:
 
     cand = OnboardingCandidate(
         pesel=pesel,
-        source="employees",
+        source=source,
         crm_id=emp.get("id"),
         name=name,
         surname=surname,
@@ -326,7 +333,7 @@ def collect_onboarding_candidates(
     *,
     tenant_id: int | None = None,
 ) -> OnboardingPlan:
-    """Fetch CRM employees + customers and build onboarding candidates.
+    """Fetch CRM users/employees/customers and build onboarding candidates.
 
     Parameters
     ----------
@@ -351,14 +358,18 @@ def collect_onboarding_candidates(
         return plan
 
     client = CrmApiClient(settings)
+    users = client.fetch_table("users")
     employees = client.fetch_table("employees")
     customers = client.fetch_table("customers")
     plan.api_requests = client.api_requests
 
     if tenant_id:
+        # `users` does not expose tenant_id; tenant is scoped by the missing
+        # rows themselves (they came from tenant-filtered bills).
         employees = [r for r in employees if int(r.get("tenant_id") or 0) == tenant_id]
         customers = [r for r in customers if int(r.get("tenant_id") or 0) == tenant_id]
 
+    user_index = _index_employees_by_pesel(users)
     emp_index = _index_employees_by_pesel(employees)
     cust_index = _index_customers_by_pesel(customers)
 
@@ -369,7 +380,9 @@ def collect_onboarding_candidates(
             continue
         seen.add(pesel)
 
-        if pesel in emp_index:
+        if pesel in user_index:
+            plan.candidates.append(_build_from_employee(pesel, user_index[pesel], source="users"))
+        elif pesel in emp_index:
             plan.candidates.append(_build_from_employee(pesel, emp_index[pesel]))
         elif pesel in cust_index:
             plan.candidates.append(_build_from_customer(pesel, cust_index[pesel]))

@@ -177,7 +177,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
                                     "Адрес добавляется только если он польский. "
                                     "Обязательно: дата рождения и паспорт. Статус = Osoba z zewnątrz.",
         "auto.step2.onboard.start": "Onboarding: проверяю {count} отсутствующих PESEL в CRM…",
+        "auto.step2.onboard.auto_start": "Auto-onboarding: проверяю {count} отсутствующих PESEL в CRM…",
         "auto.step2.onboard.plan": "План: готовы={ready}, заблокировано={blocked}, нет в CRM={missing}",
+        "auto.step2.onboard.auto_confirm": (
+            "Auto-onboarding: создаю {ready} карточек PRACOWNIK; "
+            "заблокировано={blocked}, нет в CRM={missing}."
+        ),
         "auto.step2.onboard.nothing": "Нет кандидатов готовых к авто-onboardingу — нужны ручные данные.",
         "auto.step2.onboard.confirm_title": "Авто-onboarding из CRM",
         "auto.step2.onboard.confirm_body": (
@@ -423,7 +428,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Status = Osoba z zewnątrz."
         ),
         "auto.step2.onboard.start": "Onboarding: sprawdzam {count} brakujących PESEL w CRM…",
+        "auto.step2.onboard.auto_start": "Auto-onboarding: sprawdzam {count} brakujących PESEL w CRM…",
         "auto.step2.onboard.plan": "Plan: gotowe={ready}, zablokowane={blocked}, brak w CRM={missing}",
+        "auto.step2.onboard.auto_confirm": (
+            "Auto-onboarding: tworzę {ready} kart PRACOWNIK; "
+            "zablokowane={blocked}, brak w CRM={missing}."
+        ),
         "auto.step2.onboard.nothing": "Brak kandydatów do automatycznego onboardingu — uzupełnij dane ręcznie.",
         "auto.step2.onboard.confirm_title": "Onboarding z CRM",
         "auto.step2.onboard.confirm_body": (
