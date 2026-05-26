@@ -10,6 +10,13 @@ from urllib.parse import quote_plus
 
 import pandas as pd
 
+from utils.pesel import (
+    birthdate_from_pesel as _birthdate_from_pesel_util,
+    age_on as _age_on_util,
+    is_female_from_pesel as _is_female_from_pesel_util,
+    first_day_of_next_month as _first_day_of_next_month_util,
+)
+
 
 ProgressCallback = Callable[[int, int], None]
 
@@ -155,44 +162,8 @@ def _normalize_kup_percent(value: float) -> float:
     return value
 
 
-def _birthdate_from_pesel(pesel: str) -> Optional[date]:
-    """Decode the birth date encoded in a Polish PESEL number.
-
-    PESEL century is encoded via month offset:
-      01-12 -> 1900-1999, 21-32 -> 2000-2099, 41-52 -> 2100-2199,
-      61-72 -> 2200-2299, 81-92 -> 1800-1899.
-    """
-    digits = "".join(ch for ch in str(pesel or "") if ch.isdigit())
-    if len(digits) < 6:
-        return None
-    try:
-        yy = int(digits[0:2])
-        mm = int(digits[2:4])
-        dd = int(digits[4:6])
-    except ValueError:
-        return None
-
-    if 1 <= mm <= 12:
-        year = 1900 + yy
-    elif 21 <= mm <= 32:
-        year = 2000 + yy
-        mm -= 20
-    elif 41 <= mm <= 52:
-        year = 2100 + yy
-        mm -= 40
-    elif 61 <= mm <= 72:
-        year = 2200 + yy
-        mm -= 60
-    elif 81 <= mm <= 92:
-        year = 1800 + yy
-        mm -= 80
-    else:
-        return None
-
-    try:
-        return date(year, mm, dd)
-    except ValueError:
-        return None
+def _birthdate_from_pesel(pesel: object) -> Optional[date]:
+    return _birthdate_from_pesel_util(pesel)
 
 
 def _clarion_to_date(clarion_int: int) -> Optional[date]:
@@ -203,10 +174,7 @@ def _clarion_to_date(clarion_int: int) -> Optional[date]:
 
 
 def _age_on(birth: date, on_date: date) -> int:
-    years = on_date.year - birth.year
-    if (on_date.month, on_date.day) < (birth.month, birth.day):
-        years -= 1
-    return years
+    return _age_on_util(birth, on_date)
 
 
 def _resolve_pit_stawka(pesel: str, data_wyplaty_clarion: int) -> float:
@@ -224,23 +192,12 @@ def _resolve_pit_stawka(pesel: str, data_wyplaty_clarion: int) -> float:
     return PIT_DEFAULT_STAWKA
 
 
-def _is_female_from_pesel(pesel: str) -> Optional[bool]:
-    """Return biological sex from PESEL (True=female, False=male), or None if invalid."""
-    digits = "".join(ch for ch in str(pesel or "") if ch.isdigit())
-    if len(digits) < 10:
-        return None
-    try:
-        sex_digit = int(digits[9])
-    except ValueError:
-        return None
-    # PESEL rule: even=female, odd=male
-    return (sex_digit % 2) == 0
+def _is_female_from_pesel(pesel: object) -> Optional[bool]:
+    return _is_female_from_pesel_util(pesel)
 
 
 def _first_day_of_next_month(value: date) -> date:
-    if value.month == 12:
-        return date(value.year + 1, 1, 1)
-    return date(value.year, value.month + 1, 1)
+    return _first_day_of_next_month_util(value)
 
 
 def _is_fp_fgsp_age_exempt(pesel: str, data_wyplaty_clarion: int) -> bool:
@@ -310,194 +267,10 @@ def _resolve_umowa_zlecenie_pit_stawka(
     return _resolve_pit_stawka(pesel, data_wyplaty_clarion)
 
 
-def _calculate_umowa_financials(
-    brutto: float,
-    kup_proc: float,
-    stawka_podatku_proc: float,
-    emerytalne_proc: float,
-    rentowe_u_proc: float,
-    rentowe_p_proc: float,
-    chorobowe_proc: float,
-    wypadkowe_proc: float,
-    zdrowotne_proc: float,
-    fp_proc: float,
-    fgsp_proc: float,
-) -> dict[str, float]:
-    """Replicates the result of WaProGang's `Wylicz` button for umowa cywilno-prawna.
-
-    Standard Polish ZUS rules for umowa zlecenia:
-      * emerytalne (e.g. 19,52%) split equally between zleceniobiorca and zleceniodawca
-      * rentowe split as separate inputs: rent_u (zleceniobiorca, e.g. 1,5%)
-        and rent_p (zleceniodawca, e.g. 6,5%)
-      * chorobowe (zleceniobiorca only, voluntary, e.g. 2,45%)
-      * wypadkowe (zleceniodawca only, employer rate)
-      * zdrowotne (zleceniobiorca only, e.g. 9%) on podstawa = brutto - skladki_zleceniobiorca
-      * FP, FGSP (zleceniodawca only)
-      * KUP applied to (brutto - skladki_zleceniobiorca)
-      * dochod = brutto - skladki_zleceniobiorca - kup_kwota
-      * stawka_podatku is provided by caller (12% standard, 0% for PIT-zero under 26)
-      * podatek_naliczony = podstawa_opodatkowania * stawka_podatku / 100
-      * podstawa_opodatkowania = round(dochod, 0) (do pelnych zlotych)
-      * zaliczka_podatku = round(podatek_naliczony, 0) (do pelnych zlotych, do urzedu)
-      * KWOTA_PODATKU (w zapisie DB) = zaliczka_podatku
-      * kwota_do_wyplaty = brutto - skladki_zleceniobiorca - zdrowotne - zaliczka_podatku
-
-    For umowa o dzielo (rates equal 0) this degrades naturally: only KUP and tax apply.
-    """
-
-    def d(value: float) -> Decimal:
-        return Decimal(str(value))
-
-    def r2(value: Decimal | float) -> float:
-        # Accounting-style rounding (half up), not Python bankers rounding.
-        return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-
-    def r0_pit(value: Decimal | float) -> float:
-        # WaPro `Wylicz` zaokragla podstawe opodatkowania i zaliczke podatku
-        # wedlug zasady "polowka w dol" (HALF_DOWN), wiec wartosci konczace sie
-        # na ,50 idą wniz (np. 6170,50 -> 6170, nie 6171). Bez tej zasady
-        # netto byloby zanizone o 1 zł na umowach z dochodem konczacym sie na ,50.
-        return float(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_DOWN))
-
-    brutto_d = d(brutto)
-    emerytalne_u_proc_d = d(emerytalne_proc) / d(2)
-    emerytalne_u_raw = brutto_d * emerytalne_u_proc_d / d(100)
-    emerytalne_p_raw = brutto_d * emerytalne_u_proc_d / d(100)
-    rentowe_u_raw = brutto_d * d(rentowe_u_proc) / d(100)
-    rentowe_p_raw = brutto_d * d(rentowe_p_proc) / d(100)
-    chorobowe_u_raw = brutto_d * d(chorobowe_proc) / d(100)
-    wypadkowe_p_raw = brutto_d * d(wypadkowe_proc) / d(100)
-    fp_raw = brutto_d * d(fp_proc) / d(100)
-    fgsp_raw = brutto_d * d(fgsp_proc) / d(100)
-
-    emerytalne_zleceniobiorca = r2(emerytalne_u_raw)
-    emerytalne_zleceniodawca = r2(emerytalne_p_raw)
-    rentowe_zleceniobiorca = r2(rentowe_u_raw)
-    rentowe_zleceniodawca = r2(rentowe_p_raw)
-    chorobowe_zleceniobiorca = r2(chorobowe_u_raw)
-    wypadkowe_zleceniodawca = r2(wypadkowe_p_raw)
-    fp_kwota = r2(fp_raw)
-    fgsp_kwota = r2(fgsp_raw)
-
-    skladki_zleceniobiorca_raw = (
-        emerytalne_u_raw + rentowe_u_raw + chorobowe_u_raw
-    )
-    podstawa_raw = brutto_d - skladki_zleceniobiorca_raw
-    zdrowotne_raw = podstawa_raw * d(zdrowotne_proc) / d(100)
-    kup_raw = podstawa_raw * d(kup_proc) / d(100)
-    dochod_raw = brutto_d - skladki_zleceniobiorca_raw - kup_raw
-    podstawa_opodatkowania = r0_pit(dochod_raw)
-    stawka_podatku = r2(stawka_podatku_proc)
-    podatek_naliczony = r2(d(podstawa_opodatkowania) * d(stawka_podatku) / d(100))
-    zaliczka_podatku = r0_pit(podatek_naliczony)
-
-    # Store standard monetary fields rounded to grosz.
-    skladki_zleceniobiorca = r2(skladki_zleceniobiorca_raw)
-    zdrowotne_zleceniobiorca = r2(zdrowotne_raw)
-    kup_kwota = r2(kup_raw)
-    dochod = r2(dochod_raw)
-
-    # WaPro payout line behaves slightly differently depending on whether tax advance
-    # rounding went up or down. Keep both candidates and choose accordingly.
-    net_raw = Decimal(
-        str(r2(brutto_d - skladki_zleceniobiorca_raw - zdrowotne_raw - d(zaliczka_podatku)))
-    )
-    podstawa_rounded = brutto_d - d(r2(skladki_zleceniobiorca_raw))
-    zdrowotne_rounded = d(r2(podstawa_rounded * d(zdrowotne_proc) / d(100)))
-    net_rounded_components = Decimal(
-        str(r2(brutto_d - d(r2(skladki_zleceniobiorca_raw)) - zdrowotne_rounded - d(zaliczka_podatku)))
-    )
-    if d(zaliczka_podatku) > d(podatek_naliczony):
-        selected_net = net_rounded_components
-    else:
-        selected_net = net_raw
-    # Preserve observed WaPro behavior: values ending at x,99 are displayed as next
-    # whole złoty in payout line (e.g. 399,99 -> 400,00).
-    next_zl = selected_net.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-    if next_zl > selected_net and (next_zl - selected_net) <= Decimal("0.01"):
-        kwota_do_wyplaty = float(next_zl)
-    else:
-        kwota_do_wyplaty = float(selected_net)
-
-    return {
-        "emerytalne_zleceniobiorca": emerytalne_zleceniobiorca,
-        "emerytalne_zleceniodawca": emerytalne_zleceniodawca,
-        "rentowe_zleceniobiorca": rentowe_zleceniobiorca,
-        "rentowe_zleceniodawca": rentowe_zleceniodawca,
-        "chorobowe_zleceniobiorca": chorobowe_zleceniobiorca,
-        "wypadkowe_zleceniodawca": wypadkowe_zleceniodawca,
-        "zdrowotne_zleceniobiorca": zdrowotne_zleceniobiorca,
-        "fp_kwota": fp_kwota,
-        "fgsp_kwota": fgsp_kwota,
-        "kup_kwota": kup_kwota,
-        "dochod": dochod,
-        "stawka_podatku": stawka_podatku,
-        # WaPro potrącenia / net align with zaliczka (full zł), not naliczony grosz value.
-        "kwota_podatku": zaliczka_podatku,
-        "kwota_do_wyplaty": kwota_do_wyplaty,
-    }
-
-
-def _calculate_umowa_o_dzielo_financials(
-    brutto: float,
-    kup_proc: float,
-    stawka_podatku_proc: float = PIT_DEFAULT_STAWKA,
-) -> dict[str, float]:
-    """Wylicz jak zlecenie, ale bez żadnych składek ZUS i bez zdrowotnej.
-
-    Podstawa kosztów uzyskania: pełne brutto (brak składek odliczanych od podstawy).
-    """
-    def d(value: float) -> Decimal:
-        return Decimal(str(value))
-
-    def r2(value: Decimal | float) -> float:
-        return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-
-    def r0_pit(value: Decimal | float) -> float:
-        # Patrz komentarz w `_calculate_umowa_financials`: WaPro Wylicz uzywa
-        # HALF_DOWN przy zaokraglaniu podstawy opodatkowania i zaliczki PIT.
-        return float(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_DOWN))
-
-    brutto_d = d(brutto)
-    skladki_zleceniobiorca_raw = Decimal("0")
-    zdrowotne_raw = Decimal("0")
-
-    kup_raw = brutto_d * d(kup_proc) / d(100)
-    dochod_raw = brutto_d - kup_raw
-    podstawa_opodatkowania = r0_pit(dochod_raw)
-    stawka_podatku = r2(stawka_podatku_proc)
-    podatek_naliczony = r2(d(podstawa_opodatkowania) * d(stawka_podatku) / d(100))
-    zaliczka_podatku = r0_pit(podatek_naliczony)
-
-    kup_kwota = r2(kup_raw)
-    dochod = r2(dochod_raw)
-
-    # Umowa o dzielo: brak skladek, wiec netto = brutto - zaliczka_podatku.
-    # Logika dwoch kandydatow z _calculate_umowa_financials nie ma tu sensu
-    # (oba sa identyczne bez zdrowotnej/ZUS), upraszczamy do jednej wartosci.
-    selected_net = Decimal(str(r2(brutto_d - zdrowotne_raw - d(zaliczka_podatku))))
-    next_zl = selected_net.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-    if next_zl > selected_net and (next_zl - selected_net) <= Decimal("0.01"):
-        kwota_do_wyplaty = float(next_zl)
-    else:
-        kwota_do_wyplaty = float(selected_net)
-
-    return {
-        "emerytalne_zleceniobiorca": 0.0,
-        "emerytalne_zleceniodawca": 0.0,
-        "rentowe_zleceniobiorca": 0.0,
-        "rentowe_zleceniodawca": 0.0,
-        "chorobowe_zleceniobiorca": 0.0,
-        "wypadkowe_zleceniodawca": 0.0,
-        "zdrowotne_zleceniobiorca": 0.0,
-        "fp_kwota": 0.0,
-        "fgsp_kwota": 0.0,
-        "kup_kwota": kup_kwota,
-        "dochod": dochod,
-        "stawka_podatku": stawka_podatku,
-        "kwota_podatku": zaliczka_podatku,
-        "kwota_do_wyplaty": kwota_do_wyplaty,
-    }
+from .financials import (
+    calculate_umowa_financials as _calculate_umowa_financials,
+    calculate_umowa_o_dzielo_financials as _calculate_umowa_o_dzielo_financials,
+)
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, Engine

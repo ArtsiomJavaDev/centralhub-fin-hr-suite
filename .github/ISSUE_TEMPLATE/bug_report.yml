@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible problem in CentralHub / ImporterWaPro
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not attach real employee data, PESEL values, secrets, logs, or exported payroll files.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use anonymized sample data only.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Click ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CRM API / MySQL
+        - Excel import
+        - WaPro DB import
+        - Tax / ZUS calculation
+        - UI
+        - Packaging / setup
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: |
+        Windows version:
+        Python version:
+        App version / commit:
+    validations:
+      required: false
+

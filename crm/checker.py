@@ -199,7 +199,11 @@ def verify_financials(df_formatted: pd.DataFrame) -> VerifyResult:
 
         kup = _kup_str_to_float(row.get("KUP %", "0%"))
         try:
-            pit_rate = float(row.get("Stawka podatku [%]", 12.0) or 12.0)
+            _pit_val = row.get("Stawka podatku [%]")
+            if _pit_val is None or str(_pit_val).strip() == "":
+                pit_rate = 12.0
+            else:
+                pit_rate = float(_pit_val)
         except (TypeError, ValueError):
             pit_rate = 12.0
 
