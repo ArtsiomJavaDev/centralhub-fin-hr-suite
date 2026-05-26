@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in CentralHub / ImporterWaPro
+description: Report a reproducible problem in CentralHub
 title: "Bug: "
 labels: ["bug"]
 body:
@@ -43,7 +43,7 @@ body:
       options:
         - CRM API / MySQL
         - Excel import
-        - WaPro DB import
+        - payroll database import
         - Tax / ZUS calculation
         - UI
         - Packaging / setup

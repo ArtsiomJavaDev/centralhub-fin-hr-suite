@@ -1,7 +1,7 @@
 # Contributing
 
-CentralHub / ImporterWaPro is a private payroll automation tool. Treat all CRM,
-WaPro, employee, PESEL, payroll, log, and export data as sensitive.
+CentralHub is a private payroll automation tool. Treat all CRM,
+Polish HR and payroll system, employee, PESEL, payroll, log, and export data as sensitive.
 
 ## Development Flow
 

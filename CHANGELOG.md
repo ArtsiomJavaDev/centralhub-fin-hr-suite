@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to CentralHub / ImporterWaPro should be documented here.
+All notable changes to CentralHub should be documented here.
 
 The project follows a pragmatic versioning model for internal desktop releases:
 

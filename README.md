@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ CentralHub — ImporterWaPro
+# ⚡ CentralHub — Polish HR & Payroll Automation
 
 ### The payroll data bridge that saves **$30,000 / year**
 
@@ -19,7 +19,7 @@
 
 Before CentralHub, payroll processing looked like this:
 
-> **Accountant opens WaPro → manually re-types every contract, employee address, and ZUS rate from CRM → prays nothing was mistyped → sends to ZUS → gets rejection → finds the typo → repeats.**
+> **Accountant opens Polish HR and payroll system → manually re-types every contract, employee address, and ZUS rate from CRM → prays nothing was mistyped → sends to ZUS → gets rejection → finds the typo → repeats.**
 
 With hundreds of employees on civil-law contracts (umowa o dzieło / umowa zlecenie) each month, this manual pipeline cost the company **a full-time position's worth of hours** — roughly **$30,000 per year** in labor.
 
@@ -28,9 +28,9 @@ The root of the problem was data living in two completely separate systems:
 | System | What it holds | Who maintains it |
 |--------|--------------|-----------------|
 | **CRM** (internal) | Employee records, contracts, billing, PESEL, addresses | The whole team — data is verified collaboratively |
-| **WaPro** (SQL Server) | Payroll engine — ZUS declarations, PIT, salary payments | Accountants only |
+| **Polish HR and payroll system** (SQL Server) | Payroll engine — ZUS declarations, PIT, salary payments | Accountants only |
 
-Data flowed from CRM to WaPro through **copy-paste and manual re-entry**. Every month. For every employee.
+Data flowed from CRM to Polish HR and payroll system through **copy-paste and manual re-entry**. Every month. For every employee.
 
 **CentralHub killed that workflow entirely.**
 
@@ -38,29 +38,29 @@ Data flowed from CRM to WaPro through **copy-paste and manual re-entry**. Every 
 
 ## What CentralHub Does
 
-CentralHub is a desktop application that acts as an intelligent bridge between the company CRM and the WaPro payroll database. It pulls verified data from the CRM — where the whole team has already done the accuracy work — formats it to WaPro's exact schema, validates every number, and imports it in seconds.
+CentralHub is a desktop application that acts as an intelligent bridge between the company CRM and the Polish HR and payroll database. It pulls verified data from the CRM — where the whole team has already done the accuracy work — formats it to the payroll system's exact schema, validates every number, and imports it in seconds.
 
 ```
-CRM (MySQL/API)  ──────►  CentralHub  ──────►  WaPro (SQL Server)
+CRM (MySQL/API)  ──────►  CentralHub  ──────►  Polish HR and payroll system (SQL Server)
   Verified by the team        ↕                  Payroll engine
                          Validates &
                          recalculates
                          every PLN
 ```
 
-The key insight: **the team already verifies the data in CRM**. CentralHub just makes sure that verified data lands in WaPro correctly — no re-entry, no mistyping, no month-end panic.
+The key insight: **the team already verifies the data in CRM**. CentralHub just makes sure that verified data lands in the target payroll system correctly — no re-entry, no mistyping, no month-end panic.
 
 ---
 
 ## Key Features
 
 ### 🔄 Full Automation Pipeline
-One-click flow: connect to CRM → fetch monthly report → verify → import to WaPro. Handles hundreds of contracts in the time it used to take to process one.
+One-click flow: connect to CRM → fetch monthly report → verify → import to a Polish HR and payroll system. Handles hundreds of contracts in the time it used to take to process one.
 
 ### 🧮 Financial Verification Engine
 Before touching the payroll DB, CentralHub independently recalculates every contract using **2026 Polish tax law** (ZUS, PIT, zdrowotne, FP, FGŚP) and compares the result against CRM source values:
 - Difference ≤ 0.05 PLN → **OK**
-- Difference ≤ 1.05 PLN → **Marginal** (known WaPro/CRM rounding boundary)
+- Difference ≤ 1.05 PLN → **Marginal** (known payroll-system/CRM rounding boundary)
 - Larger difference → **Discrepancy flagged** with auto-diagnosed cause
 
 This catches data issues *before* they become ZUS rejections.
@@ -80,7 +80,7 @@ Import from Excel with full validation across 8 profiles:
 | **Tax Office Link** | Urząd Skarbowy assignment by employee ID |
 
 ### 🛡️ Pre-Import Safeguards
-- **PESEL batch lookup** — verifies every PESEL exists in WaPro before importing
+- **PESEL batch lookup** — verifies every PESEL exists in Polish HR and payroll system before importing
 - **Duplicate detection** — blocks re-importing a period already in the DB
 - **Dry-run mode** — full simulation with per-row status table, zero DB writes
 - **Rollback** — undo any import, either from the current session or from history
@@ -92,7 +92,7 @@ All passwords and API tokens are encrypted with **Windows DPAPI** and stored in 
 Connects to the CRM MySQL database through an **SSH tunnel to AWS RDS**, or fetches data directly from the **CRM REST API** — whichever source has the freshest data. Supports both data sources simultaneously, merging them into a single import batch.
 
 ### 📊 Live DB Overview
-Browse the WaPro database without opening SQL Server Management Studio — view employee lists, contract stats, and import history directly in the app.
+Browse the payroll database without opening SQL Server Management Studio — view employee lists, contract stats, and import history directly in the app.
 
 ### 🗂️ PPK Support
 Automatically calculates and attaches PPK (Employee Capital Plan) contributions to contracts using paired-row merge logic.
@@ -134,14 +134,14 @@ The savings come from a simple architectural decision: **let the team verify dat
 - Python 3.11+
 - ODBC Driver 17 for SQL Server
 - OpenSSH Client (Windows optional feature)
-- Access to WaPro SQL Server and CRM credentials
+- Access to payroll SQL Server and CRM credentials
 
 ### Setup
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/YOUR_ORG/ImporterWaPro.git
-cd ImporterWaPro
+git clone https://github.com/YOUR_ORG/CentralHub.git
+cd CentralHub
 
 # 2. Create and activate virtual environment
 python -m venv .venv
@@ -167,7 +167,7 @@ python tools/crm_configure.py
 python tools/crm_api_configure.py --set-token
 ```
 
-WaPro DB password is set through the app's Settings tab on first launch.
+payroll database password is set through the app's Settings tab on first launch.
 
 ### Run
 
@@ -192,7 +192,7 @@ pull request into `main`. See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
 ## Project Structure
 
 ```
-ImporterWaPro/
+CentralHub/
 ├── main.py                  # App entry point & main window
 ├── secrets_store.py         # DPAPI encrypt/decrypt
 ├── config.ini.example       # Config template (copy → config.ini)
@@ -200,12 +200,12 @@ ImporterWaPro/
 ├── crm/                     # CRM integration layer
 │   ├── api_client.py        # REST API client
 │   ├── mysql_client.py      # MySQL/SSH tunnel client
-│   ├── formatter.py         # CRM → WaPro data transformation
+│   ├── formatter.py         # CRM → payroll system data transformation
 │   ├── checker.py           # PESEL lookup & financial verification
 │   ├── settings.py          # CRM config loader
 │   └── tunnel.py            # SSH tunnel manager
 │
-├── db/                      # WaPro SQL Server layer
+├── db/                      # payroll SQL Server layer
 │   ├── service.py           # All DB operations (CRUD, import, rollback)
 │   ├── tax_calc_2026.py     # 2026 Polish ZUS/PIT calculations
 │   └── config_loader.py     # DB config
