@@ -15,23 +15,23 @@ _APP_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = _APP_DIR / "config.ini"
 
 CRM_DEFAULTS: dict[str, str] = {
-    "ssh_host": "51.20.71.10",
-    "ssh_user": "readonly_db",
+    "ssh_host": "",
+    "ssh_user": "",
     "ssh_key_path": str(Path.home() / ".ssh" / "id_ed25519"),
-    "rds_host": "fba-production-db.cnacmic68dqe.eu-north-1.rds.amazonaws.com",
+    "rds_host": "",
     "rds_port": "3306",
     "local_port": "3307",
     "mysql_host": "127.0.0.1",
-    "mysql_user": "readonly_user",
+    "mysql_user": "",
     "mysql_password": "",
-    "mysql_database": "fba_prod_db",
+    "mysql_database": "",
     # SQL returning UDUZ04-like columns (0..12) or named columns mapped below.
     # Use %(year)s and %(month)s if filtering by period.
     "report_sql": "",
 }
 
 CRM_API_DEFAULTS: dict[str, str] = {
-    "base_url": "https://crmfba.ink/api",
+    "base_url": "",
     "token": "",
     # 0 means both tenants. 1 = FBA, 2 = FBA Payroll.
     "tenant_id": "0",

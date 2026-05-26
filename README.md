@@ -27,7 +27,7 @@ The root of the problem was data living in two completely separate systems:
 
 | System | What it holds | Who maintains it |
 |--------|--------------|-----------------|
-| **CRM** (`crmfba.ink`) | Employee records, contracts, billing, PESEL, addresses | The whole team — data is verified collaboratively |
+| **CRM** (internal) | Employee records, contracts, billing, PESEL, addresses | The whole team — data is verified collaboratively |
 | **WaPro** (SQL Server) | Payroll engine — ZUS declarations, PIT, salary payments | Accountants only |
 
 Data flowed from CRM to WaPro through **copy-paste and manual re-entry**. Every month. For every employee.

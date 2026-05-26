@@ -33,7 +33,7 @@ def main() -> int:
         help="Save MySQL password (encrypted). Without value — secure prompt.",
     )
     parser.add_argument("--test", action="store_true", help="Test SSH tunnel + MySQL")
-    parser.add_argument("--list-tables", action="store_true", help="List tables in fba_prod_db")
+    parser.add_argument("--list-tables", action="store_true", help="List tables in the configured MySQL database")
     args = parser.parse_args()
 
     if args.set_user:
