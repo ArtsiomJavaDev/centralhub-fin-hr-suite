@@ -888,7 +888,7 @@ def recalculate_umowa_zlecenie_from_rates(
 ) -> RecalcResult:
     """Przelicza wartości finansowe umowy zlecenia na podstawie stawek przechowywanych w BD.
 
-    Algorytm jest dokładnym odwzorowaniem logiki WaPro („przycisk Wylicz") przy użyciu
+    Algorytm jest dokładnym odwzorowaniem logiki payroll system („przycisk Wylicz") przy użyciu
     Decimal zamiast float. Funkcja służy do WERYFIKACJI — porównania danych w BD
     z wartościami obliczonymi od nowa z tą samą precyzją.
 
@@ -897,8 +897,8 @@ def recalculate_umowa_zlecenie_from_rates(
       * składki_zleceniobiorca_raw = suma RAW (bez zaokrąglenia pośredniego) → podstawa zdrowotna
       * KUP naliczany od (brutto − składki_zleceniobiorca_raw)
       * PIT zaokrąglany HALF_DOWN do pełnych złotych
-      * netto wybierane z dwóch kandydatów wg logiki WaPro (net_raw vs net_rounded_components)
-      * wartości kończące się na x,99 PLN zaokrąglane do x+1,00 PLN (WaPro display rule)
+      * netto wybierane z dwóch kandydatów wg logiki payroll system (net_raw vs net_rounded_components)
+      * wartości kończące się na x,99 PLN zaokrąglane do x+1,00 PLN (payroll display rule)
     """
     d = Decimal
     br = d(str(brutto))
@@ -943,7 +943,7 @@ def recalculate_umowa_zlecenie_from_rates(
     kup = zaokr_zus(kup_raw)
     dochod = zaokr_zus(dochod_raw)
 
-    # Netto — dwaj kandydaci (logika WaPro)
+    # Netto — dwaj kandydaci (logika payroll system)
     net_raw = zaokr_zus(br - skladki_u_raw - zdr_raw - d(str(zaliczka)))
     podstawa_rd = br - zaokr_zus(skladki_u_raw)
     zdr_rd = zaokr_zus(podstawa_rd * d(str(zdrowotne_proc)) / d("100"))
@@ -951,7 +951,7 @@ def recalculate_umowa_zlecenie_from_rates(
 
     selected_net = net_rdc if d(str(zaliczka)) > podatek_naliczony else net_raw
 
-    # WaPro display rule: x,99 → zaokrąglij do (x+1),00
+    # payroll display rule: x,99 → zaokrąglij do (x+1),00
     next_zl = selected_net.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     if next_zl > selected_net and (next_zl - selected_net) <= Decimal("0.01"):
         kwota_do_wyplaty = next_zl

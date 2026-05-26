@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Full automation simulation for one CRM month — NO writes to WaPro DB.
+"""Full automation simulation for one CRM month — NO writes to payroll database.
 
 Runs the same steps as Automatyzacja tab:
   1. API fetch → format
@@ -91,8 +91,8 @@ def main() -> int:
         pit_dist = formatted["Stawka podatku [%]"].value_counts().to_dict()
         print(f"  PIT rates:               {pit_dist}")
 
-    # ── Step 1b: CRM/WaPro rachunki reconciliation ──────────────────────────
-    _banner("①b Rachunki reconciliation (CRM ↔ WaPro, read-only)")
+    # ── Step 1b: CRM/payroll system rachunki reconciliation ──────────────────────────
+    _banner("①b Rachunki reconciliation (CRM ↔ payroll system, read-only)")
     try:
         svc = DatabaseService(db_cfg)
         ok_conn, conn_msg = svc.test_connection()
@@ -112,23 +112,23 @@ def main() -> int:
 
     print(f"  CRM paid bills:          {rachunki_report.crm_paid_total}")
     print(f"  CRM importable bills:    {rachunki_report.crm_importable_total}")
-    print(f"  WaPro month rachunki:    {rachunki_report.wapro_month_total}")
-    print(f"  CRM found in WaPro any date: {rachunki_report.matched_any_date}")
+    print(f"  payroll system month rachunki:    {rachunki_report.wapro_month_total}")
+    print(f"  CRM found in payroll system any date: {rachunki_report.matched_any_date}")
     print(f"  Same month matches:      {rachunki_report.matched_same_month}")
     print(f"  Date mismatches:         {len(rachunki_report.date_mismatch)}")
-    print(f"  CRM missing in WaPro:    {len(rachunki_report.crm_missing_in_wapro)}")
+    print(f"  CRM missing in payroll system:    {len(rachunki_report.crm_missing_in_wapro)}")
     print(f"    importable missing:    {len(rachunki_report.crm_missing_importable)}")
     print(f"    blocked missing:       {len(rachunki_report.crm_missing_blocked)}")
     print(
-        f"  WaPro month not in CRM paid month: "
+        f"  payroll system month not in CRM paid month: "
         f"{len(rachunki_report.wapro_month_not_in_crm_paid)}"
     )
     print(
-        f"  WaPro month exists in CRM other date: "
+        f"  payroll system month exists in CRM other date: "
         f"{len(rachunki_report.wapro_month_exists_in_crm_other_date)}"
     )
     if rachunki_report.crm_missing_in_wapro:
-        print("  Sample CRM missing in WaPro:")
+        print("  Sample CRM missing in payroll system:")
         for item in rachunki_report.crm_missing_in_wapro[:8]:
             print(
                 f"    [{item.status}/{item.reason or 'ok'}] "
@@ -139,7 +139,7 @@ def main() -> int:
         for crm_bill, wapro_bill in rachunki_report.date_mismatch[:8]:
             print(
                 f"    {crm_bill.nr_rachunku}: CRM paid={crm_bill.payment_date} "
-                f"WaPro DATA_WYPLATY={wapro_bill.data_wyplaty}"
+                f"payroll system DATA_WYPLATY={wapro_bill.data_wyplaty}"
             )
 
   # ── Step 2: PESEL check ──────────────────────────────────────────────────
@@ -156,7 +156,7 @@ def main() -> int:
         print(f"FAIL: PESEL check — {exc}")
         return 1
 
-    print(f"  Found in WaPro:           {pesel_result.found}/{pesel_result.total}")
+    print(f"  Found in payroll system:           {pesel_result.found}/{pesel_result.total}")
     print(f"  Missing:                  {len(pesel_result.missing)}")
     if pesel_result.missing_rows:
         for mr in pesel_result.missing_rows[:10]:
@@ -255,9 +255,9 @@ def main() -> int:
     if checkin.errors > 0:
         issues.append(f"{checkin.errors} check-in errors")
     if rachunki_report.hard_errors > 0:
-        issues.append(f"{rachunki_report.hard_errors} CRM rachunki missing in WaPro")
+        issues.append(f"{rachunki_report.hard_errors} CRM rachunki missing in payroll system")
     if len(pesel_result.missing) > 0:
-        issues.append(f"{len(pesel_result.missing)} PESEL missing in WaPro (import would skip those umowy)")
+        issues.append(f"{len(pesel_result.missing)} PESEL missing in payroll system (import would skip those umowy)")
 
     if passed and not issues:
         print("  RESULT: PASS — pipeline OK for this month (simulation only, nothing written).")

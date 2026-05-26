@@ -51,7 +51,7 @@ def _norm_umowy_sheet_column(name: object) -> str:
 
 
 def _sheet_looks_like_umowy_grid(df: pd.DataFrame) -> bool:
-    """True if Excel sheet has columns typical for WaPro umowy / PPK export."""
+    """True if Excel sheet has columns typical for payroll system umowy / PPK export."""
     if df.empty or df.shape[1] < 2:
         return False
     keys = {_norm_umowy_sheet_column(c) for c in df.columns}
@@ -74,7 +74,7 @@ def _sheet_looks_like_umowy_grid(df: pd.DataFrame) -> bool:
 def read_excel_umowy_format(file_path: str) -> tuple[pd.DataFrame, list[str]]:
     """Read workbook for UMOWY formatting: concatenate all plausible data sheets.
 
-    WaPro often splits PPK auxiliary lines vs agreements across sheets while
+    payroll system often splits PPK auxiliary lines vs agreements across sheets while
     `pd.read_excel` default reads only the first sheet — PPK would be missing then.
     """
     xl = pd.ExcelFile(file_path)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-"""Wykrywanie i naprawa zamienionych miejscami IMIE_1 / NAZWISKO w WaPro.
+"""Wykrywanie i naprawa zamienionych miejscami IMIE_1 / NAZWISKO w payroll system.
 
 Użycie:
   python tools/fix_swapped_names.py              # podgląd (dry-run)
-  python tools/fix_swapped_names.py --apply      # zapis w bazie WaPro
+  python tools/fix_swapped_names.py --apply      # zapis w bazie payroll system
   python tools/fix_swapped_names.py --min-confidence 0.7
   python tools/fix_swapped_names.py --export candidates.csv
 
@@ -75,7 +75,7 @@ def _load_crm_by_pesel() -> dict[str, tuple[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Naprawa zamienionych IMIE_1 i NAZWISKO w PRACOWNIK (WaPro)",
+        description="Naprawa zamienionych IMIE_1 i NAZWISKO w PRACOWNIK (payroll system)",
     )
     parser.add_argument(
         "--apply",
@@ -111,9 +111,9 @@ def main() -> int:
     service = DatabaseService(db_config)
     ok, msg = service.test_connection()
     if not ok:
-        print(f"Błąd połączenia WaPro: {msg}")
+        print(f"Błąd połączenia payroll system: {msg}")
         return 1
-    print(f"WaPro: {msg}")
+    print(f"payroll system: {msg}")
 
     rows = fetch_wapro_employees(service.engine)
     print(f"Załadowano {len(rows)} pracowników z imieniem lub nazwiskiem")

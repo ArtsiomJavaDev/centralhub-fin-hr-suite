@@ -1,8 +1,8 @@
-"""Auto-onboarding of missing employees from CRM into WAPRO PRACOWNIK.
+"""Auto-onboarding of missing employees from CRM into PAYROLL_DB PRACOWNIK.
 
 Flow
 ----
-1. Check which PESELs from the formatted CRM report are not in WAPRO PRACOWNIK
+1. Check which PESELs from the formatted CRM report are not in PAYROLL_DB PRACOWNIK
    (see crm.checker.check_pesels_in_db).
 2. For each missing PESEL, look up the person in CRM tables (employees first,
    then customers).
@@ -10,9 +10,9 @@ Flow
 4. Address is optional and only included if it's a Polish address; otherwise
    the employee is created without ADRESY_PRACOWNIKA entry.
 5. Urząd skarbowy is resolved from CRM `authority_agency` code (3-digit value
-   padded to 4 digits to match WAPRO URZEDY.KOD_US).
+   padded to 4 digits to match PAYROLL_DB URZEDY.KOD_US).
 6. Status RODZAJ_PRACOWNIKA = 2 — "Osoba z zewnątrz" (matches all 965 existing
-   employees in the current WAPRO database).
+   employees in the current PAYROLL_DB database).
 
 The resulting rows are fed to ``DatabaseService.execute_employee_import`` which
 already knows how to allocate IDs and create the related URZEDY_PRACOWNIKA link.
@@ -308,7 +308,7 @@ def _build_from_customer(pesel: str, cust: dict) -> OnboardingCandidate:
         )
     cand.warnings.append(
         "CRM customer nie zawiera daty urodzenia ani paszportu — "
-        "uzupełnij dane w WaPro ręcznie przed pierwszą umową."
+        "uzupełnij dane w payroll system ręcznie przed pierwszą umową."
     )
     return cand
 

@@ -9,11 +9,11 @@ Passwords/tokens are managed by the app and stored as Windows DPAPI blobs
 to config.ini on first use and _secrets.py will pick them up from there.
 """
 
-# ── WaPro SQL Server ───────────────────────────────────────────────────────
+# ── payroll SQL Server ───────────────────────────────────────────────────────
 DATABASE = {
     "driver":             "ODBC Driver 17 for SQL Server",
     "server":             "localhost",        # SQL Server hostname or IP
-    "database":           "WAPRO",            # WaPro database name
+    "database":           "PAYROLL_DB",            # payroll system database name
     "username":           "sa",               # SQL login
     "password":           "",                 # set via app Settings tab
     "trusted_connection": "yes",

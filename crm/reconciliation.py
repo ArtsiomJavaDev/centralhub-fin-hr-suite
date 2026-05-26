@@ -1,11 +1,11 @@
-"""Reconcile CRM bills with WaPro rachunki by NUMER_RACHUNKU.
+"""Reconcile CRM bills with payroll system rachunki by NUMER_RACHUNKU.
 
-The automation imports contracts for a selected CRM payment month, but WaPro
+The automation imports contracts for a selected CRM payment month, but payroll system
 payment dates may be edited manually. Because of that the primary invariant is:
 
-    every CRM paid bill must have the same NUMER_RACHUNKU in WaPro somewhere
+    every CRM paid bill must have the same NUMER_RACHUNKU in payroll system somewhere
 
-Month equality is diagnostic only. A bill found in WaPro with a different
+Month equality is diagnostic only. A bill found in payroll system with a different
 DATA_WYPLATY is reported as a date mismatch, not as missing.
 """
 from __future__ import annotations
@@ -92,9 +92,9 @@ def reconcile_rachunki(
     month: int,
     tenant_id: int,
 ) -> RachunkiReconciliation:
-    """Compare CRM paid bills with WaPro rachunki.
+    """Compare CRM paid bills with payroll system rachunki.
 
-    This function is read-only for both CRM and WaPro.
+    This function is read-only for both CRM and payroll system.
     """
     tables, api_requests = _fetch_tables(settings, tenant_id)
     crm_checks = _build_crm_bill_checks(tables, year, month)

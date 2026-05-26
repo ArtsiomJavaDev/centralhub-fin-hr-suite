@@ -1,4 +1,4 @@
-"""Transform CRM UDUZ04-type report into batch_merged (WaPro import) format.
+"""Transform CRM UDUZ04-type report into batch_merged (payroll system import) format.
 
 Source columns (UDUZ04.xlsx):
     [0] Lp.           [1] Number umowy  [2] Number (rachunku)  [3] Typ
@@ -11,7 +11,7 @@ Extra API-only columns (when raw row originates from crm.api_client):
     [16] calculate_type            [17] zus_emerytalne        [18] zus_zdrowotne
     [19] bill_id
 
-Target columns (batch_merged / WaPro mixed import):
+Target columns (batch_merged / payroll system mixed import):
     Number umowy | Nr Rachunku | Typ umowy | PESEL | Kwota brutto | KUP %
     Data zawarcia umowy | Data wypłaty | PPK pracownika PLN | Forma Opodtkowania
     Stawka podatku [%]
@@ -247,7 +247,7 @@ def infer_pit_rate_from_podatek(
 ) -> float:
     """Infer PIT rate from source Podatek amount.
 
-    The source gives a PLN amount, not the rate. We compare it against WaPro-like
+    The source gives a PLN amount, not the rate. We compare it against payroll-system-like
     PIT advances for 12% and 32% using brutto, KUP, and employee ZUS rates.
     """
     podatek_value = _to_float(podatek)
@@ -514,7 +514,7 @@ def df_to_export(df_formatted: pd.DataFrame) -> pd.DataFrame:
     return df_formatted.drop(columns=audit_cols, errors="ignore")
 
 
-# Canonical mapping from WaPro profile fields → formatted DataFrame columns.
+# Canonical mapping from payroll system profile fields → formatted DataFrame columns.
 # Used by crm/checker.py and ui/automatyzacja_tab.py for auto-import.
 AUTO_MAPPING: dict[str, str] = {
     "PESEL": "PESEL",

@@ -1,4 +1,4 @@
-"""Load WaPro SQL Server settings.
+"""Load payroll SQL Server settings.
 
 Priority: private.py  →  config.ini  →  code defaults
 """
@@ -25,7 +25,7 @@ def load_db_config(config_path: Path | None = None) -> DbConfig:
     return DbConfig(
         driver=db.get("driver", "ODBC Driver 17 for SQL Server").strip(),
         server=db.get("server", "localhost").strip(),
-        database=db.get("database", "WAPRO").strip(),
+        database=db.get("database", "PAYROLL_DB").strip(),
         username=db.get("username", "").strip(),
         password=decrypt_secret(db.get("password", "").strip()),
         trusted_connection=trusted,

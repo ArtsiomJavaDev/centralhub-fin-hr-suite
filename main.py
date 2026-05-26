@@ -124,7 +124,7 @@ DEFAULT_CONFIG: dict[str, dict[str, str]] = {
     "database": {
         "driver": "ODBC Driver 17 for SQL Server",
         "server": "localhost",
-        "database": "WAPRO",
+        "database": "PAYROLL_DB",
         "username": "",
         "password": "",
         "trusted_connection": "yes",
@@ -796,7 +796,7 @@ class MainWindow(QMainWindow):
             else:
                 new_name = str(col)
 
-            # WaPro often has both "Typ" (PPK + umowy) and "Typ umowy" / "Rodzaj umowy"
+            # payroll system often has both "Typ" (PPK + umowy) and "Typ umowy" / "Rodzaj umowy"
             # (sometimes empty on PPK lines). Second column used to overwrite the dict and
             # erased "PPK" before merge — coalesce per row instead.
             if new_name == _FORMAT_TYP_UMOWY_COL:
@@ -835,7 +835,7 @@ class MainWindow(QMainWindow):
         for _msg in _ppk_debug:
             self._log(_msg)
 
-        # WaPro / niektóre eksporty zapisują kwotę PPK w kolumnie "Podatek" (wiersz Typ=PPK);
+        # payroll system / niektóre eksporty zapisują kwotę PPK w kolumnie "Podatek" (wiersz Typ=PPK);
         # kolumna musi przetrwać merge, potem jak wcześniej — usuń z końcowej tabeli.
         podatek_cols = [
             c
@@ -2464,7 +2464,7 @@ class MainWindow(QMainWindow):
 
         self.driver_input.setText(db.get("driver", "ODBC Driver 17 for SQL Server"))
         self.server_input.setText(db.get("server", "localhost"))
-        self.database_input.setText(db.get("database", "WAPRO"))
+        self.database_input.setText(db.get("database", "PAYROLL_DB"))
         self.username_input.setText(db.get("username", ""))
         stored_password = db.get("password", "")
         self.password_input.setText(decrypt_secret(stored_password))
