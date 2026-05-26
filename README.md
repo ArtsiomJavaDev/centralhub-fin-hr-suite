@@ -175,6 +175,18 @@ WaPro DB password is set through the app's Settings tab on first launch.
 python main.py
 ```
 
+### Development Workflow
+
+```bash
+# Run regression tests
+pytest
+```
+
+Development changes should be made on short-lived branches such as
+`feature/...`, `fix/...`, `refactor/...`, or `test/...`, then merged through a
+pull request into `main`. See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
+[`docs/BRANCHING.md`](docs/BRANCHING.md) for the repository workflow.
+
 ---
 
 ## Project Structure

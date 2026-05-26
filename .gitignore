@@ -1,6 +1,10 @@
 # ===== SENSITIVE CONFIG — никогда не коммитить =====
 config.ini
 private.py
+.env
+.env.*
+*.secret
+*.secrets
 
 # ===== РАБОЧИЕ ДАННЫЕ (PII / операционные логи) =====
 import_history.json
@@ -16,6 +20,11 @@ swapped_candidates.csv
 
 # ===== PYTHON =====
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+.mypy_cache/
 .venv/
 venv/
 __pycache__/
