@@ -21,7 +21,7 @@ Edge cases auto-handled
 
 Tolerances:
     diff ≤ 0.05 PLN  → OK
-    diff ≤ 1.05 PLN  → MARGINAL (WaPro vs CRM rounding boundary)
+    diff ≤ 1.05 PLN  → MARGINAL (payroll system vs CRM rounding boundary)
     otherwise        → DISCREPANCY — note explains the most likely cause.
 """
 from __future__ import annotations
@@ -39,8 +39,8 @@ from db.tax_calc_2026 import (
 
 # Differences within this range are "OK" (normal rounding variance ≤ 5 gr)
 _TOLERANCE_OK = Decimal("0.05")
-# Differences within this range are "marginal" — caused by WaPro floor-vs-HALF_DOWN KUP
-# rounding: brutto × kup% produces an exact x.5 value which WaPro and CRM round differently.
+# Differences within this range are "marginal" — caused by payroll system floor-vs-HALF_DOWN KUP
+# rounding: brutto × kup% produces an exact x.5 value which payroll system and CRM round differently.
 # This is expected and produces exactly 1 PLN difference in netto.
 _TOLERANCE_MARGINAL = Decimal("1.05")
 
@@ -65,7 +65,7 @@ def _kup_str_to_float(kup: object) -> float:
 
 @dataclass
 class CheckPeselResult:
-    """Result of batch PESEL lookup in WaProGang DB."""
+    """Result of batch PESEL lookup in payroll database."""
     total: int = 0
     found: int = 0
     missing: list[str] = field(default_factory=list)
@@ -252,7 +252,7 @@ def verify_financials(df_formatted: pd.DataFrame) -> VerifyResult:
             result.zus_exempt_rows += 1
 
         # brutto_from_netto: CRM started from desired netto and computed brutto;
-        # WaPro's "Wylicz" sometimes lands ±1 PLN due to KUP HALF_DOWN. Accept
+        # payroll system's "Wylicz" sometimes lands ±1 PLN due to KUP HALF_DOWN. Accept
         # that explicitly as OK when CRM tells us the calc was reversed.
         crm_reverse_calc = calc_type == "brutto_from_netto"
 
@@ -273,7 +273,7 @@ def verify_financials(df_formatted: pd.DataFrame) -> VerifyResult:
             result.ok += 1
         elif is_marginal:
             note = (
-                f"Marginalna różnica zaokrąglenia WaPro/CRM ±{diff:.2f} PLN "
+                f"Marginalna różnica zaokrąglenia payroll system/CRM ±{diff:.2f} PLN "
                 f"(źródło={netto_src:.2f}, wyliczone={netto_calc:.2f})"
             )
             result.marginal += 1

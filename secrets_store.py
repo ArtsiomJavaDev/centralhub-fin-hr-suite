@@ -50,7 +50,7 @@ def _dpapi_protect(plain_bytes: bytes) -> bytes | None:
     ))
     blob_out = _DataBlob()
 
-    description = ctypes.c_wchar_p("ImporterWaPro secret")
+    description = ctypes.c_wchar_p("CentralHub secret")
     success = crypt32.CryptProtectData(
         ctypes.byref(blob_in),
         description,

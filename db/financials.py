@@ -4,10 +4,10 @@ Extracted from db/service.py so that these Decimal-based calculations can be
 tested and reasoned about independently of the DatabaseService class and any
 SQLAlchemy/ODBC imports.
 
-These functions replicate the WaProGang «Wylicz» button logic exactly:
+These functions replicate the payroll system «Wylicz» button logic exactly:
   * ROUND_HALF_UP for intermediate ZUS/ZDR values (grosz precision)
   * ROUND_HALF_DOWN for PIT advance (whole złoty, "half goes down")
-  * Dual-candidate netto selection to match WaPro display
+  * Dual-candidate netto selection to match payroll system display
   * x,99 → next whole złoty rounding in the payout line
 
 Public API
@@ -42,7 +42,7 @@ def calculate_umowa_financials(
     fp_proc: float,
     fgsp_proc: float,
 ) -> dict[str, float]:
-    """Replicates WaProGang's «Wylicz» button for umowa cywilno-prawna (zlecenie).
+    """Replicates payroll system's «Wylicz» button for umowa cywilno-prawna (zlecenie).
 
     Standard Polish ZUS rules for umowa zlecenia:
       * emerytalne (e.g. 19.52%) split equally between zleceniobiorca/zleceniodawca
@@ -52,7 +52,7 @@ def calculate_umowa_financials(
       * zdrowotne (zleceniobiorca only) on podstawa = brutto − składki_zleceniobiorca
       * FP, FGSP (zleceniodawca only)
       * KUP applied to (brutto − składki_zleceniobiorca)
-      * PIT HALF_DOWN to whole złoty; payout uses dual-candidate WaPro logic
+      * PIT HALF_DOWN to whole złoty; payout uses dual-candidate payroll system logic
 
     For umowa o dzieło (all ZUS/ZDR rates = 0) this degrades naturally.
     """
@@ -63,7 +63,7 @@ def calculate_umowa_financials(
         return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
     def r0_pit(value: Decimal | float) -> float:
-        # WaPro «Wylicz» rounds PIT base and advance with HALF_DOWN — values ending
+        # payroll system «Wylicz» rounds PIT base and advance with HALF_DOWN — values ending
         # at .50 go down (e.g. 6170.50 → 6170, not 6171).
         return float(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_DOWN))
 
@@ -103,7 +103,7 @@ def calculate_umowa_financials(
     kup_kwota = r2(kup_raw)
     dochod = r2(dochod_raw)
 
-    # WaPro payout: keep two candidates, pick by whether tax rounding went up.
+    # payroll system payout: keep two candidates, pick by whether tax rounding went up.
     net_raw = Decimal(
         str(r2(brutto_d - skladki_zleceniobiorca_raw - zdrowotne_raw - d(zaliczka_podatku)))
     )
@@ -114,7 +114,7 @@ def calculate_umowa_financials(
     )
     selected_net = net_rounded_components if d(zaliczka_podatku) > d(podatek_naliczony) else net_raw
 
-    # Preserve observed WaPro display rule: x,99 → next whole złoty.
+    # Preserve observed payroll display rule: x,99 → next whole złoty.
     next_zl = selected_net.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     if next_zl > selected_net and (next_zl - selected_net) <= Decimal("0.01"):
         kwota_do_wyplaty = float(next_zl)

@@ -109,7 +109,7 @@ def _pesel_key_from_series(row: pd.Series) -> str:
     return ""
 
 
-# Column names that may hold the worker's full name in various WaPro exports.
+# Column names that may hold the worker's full name in various payroll system exports.
 _NAME_COLS_PRIORITY = (
     "__ppk_match_osoba",  # internal: renamed from "Pracownik" during format transform
     "Pracownik",
@@ -150,7 +150,7 @@ def _find_name_in_row(row: pd.Series) -> str:
             if s and s.lower() not in ("nan", "none", ""):
                 return s
     # 4. Heuristic: column immediately after "Typ umowy" in the row index
-    #    (in WaPro exports the name column follows the type column).
+    #    (in payroll system exports the name column follows the type column).
     idx_list = list(row.index)
     for i, col in enumerate(idx_list):
         if str(col).lower() in ("typ umowy", "typ", "typ_umowy"):
@@ -227,7 +227,7 @@ def extract_ppk_kwota_from_row(ppk_row: pd.Series, contract_row: pd.Series | Non
                 continue
             return float(f)
 
-    # --- 2b. WaPro / Sheets: PPK auxiliary rows often put the contribution in **Podatek** ---
+    # --- 2b. payroll system / Sheets: PPK auxiliary rows often put the contribution in **Podatek** ---
     # (same header as PIT withholdings on umowa rows.)
     _podatek_keys = ("Podatek", "podatek pit", "zaliczka pit")
     for key in _podatek_keys:
@@ -329,7 +329,7 @@ def merge_ppk_companion_rows_format(
     _dbg(f"[ppk/merge] kolumna={typ_col!r} wartości: {unique_types}")
 
     # Also scan every OTHER column for rows that contain 'ppk' somewhere — these
-    # are PPK rows where the type column wasn't the right column (WaPro formats vary).
+    # are PPK rows where the type column wasn't the right column (payroll system formats vary).
     _ppk_col_candidates: list[str] = []
     for _c in out.columns:
         if _c == typ_col:
@@ -370,7 +370,7 @@ def merge_ppk_companion_rows_format(
 
         # Fallback 3: NaN / empty type — two sub-cases.
         # 3A: "PPK pracownika PLN" already has a positive value.
-        # 3B: "Kwota brutto" has a value (WaPro puts the PPK contribution amount
+        # 3B: "Kwota brutto" has a value (payroll system puts the PPK contribution amount
         #     there when the row has no type label).
         if not _is_ppk_row:
             _norm_t0 = str(t0 or "").strip().lower()

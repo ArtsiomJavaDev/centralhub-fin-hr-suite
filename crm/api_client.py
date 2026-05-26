@@ -295,7 +295,7 @@ def _build_uduz04_rows(
             continue
 
         # Legal entities (CRM customers with type=legal_entity) cannot be
-        # PRACOWNIK in WaPro — their `tax_number` is a NIP/VAT number, not a
+        # PRACOWNIK in payroll system — their `tax_number` is a NIP/VAT number, not a
         # PESEL. Without this filter their 11-digit tax_numbers (e.g. French
         # FR59931696785) leak through _normalize_pesel as fake PESELs.
         if str(person.get("type") or "").strip().lower() == "legal_entity":

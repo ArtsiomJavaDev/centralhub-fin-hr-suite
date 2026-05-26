@@ -58,7 +58,7 @@ def _raise_if_cancelled(cancel_token: CancelToken | None) -> None:
         raise ImportCancelled("Импорт отменён пользователем")
 
 
-# Single source of truth for DB column string limits. Matches WAPRO schema.
+# Single source of truth for DB column string limits. Matches PAYROLL_DB schema.
 # Grouped by table for readability. Use `_fit(value, DB_FIELD_LIMITS[...])`
 # instead of raw [:N] literals scattered across the file.
 DB_FIELD_LIMITS: dict[str, int] = {

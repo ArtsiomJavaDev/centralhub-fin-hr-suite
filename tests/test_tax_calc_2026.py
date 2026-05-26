@@ -193,7 +193,7 @@ class TestRecalculateUmowaDzielo:
         )
         assert recalc.kup_kwota == oblicz.kup_kwota
         assert recalc.kwota_podatku == oblicz.zaliczka_pit
-        # netto may differ by at most 0.01 due to WaPro x.99 display rule
+        # netto may differ by at most 0.01 due to payroll system x.99 display rule
         assert abs(float(recalc.kwota_do_wyplaty) - float(oblicz.netto)) <= 0.01
 
     def test_brutto_1000_kup50_pit12(self):

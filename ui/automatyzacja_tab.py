@@ -4,11 +4,11 @@ Pipeline steps:
   1. Load & format CRM UDUZ04-type file → batch_merged DataFrame
      - Student/ZUS-exempt detection (brutto≈netto → składki=0)
      - Special-PESEL chorobowe 2.45%
-  2. Check employees in WaProGang DB (batch PESEL lookup)
+  2. Check employees in payroll database (batch PESEL lookup)
   3. Verify netto/brutto calculations against source values
   4. Dry-run — check-in without writing to DB (shows per-row table)
   5. Pre-import duplicate guard — detect if period was already imported
-  6. Import umowy to WaProGang DB with progress bar + cancel
+  6. Import umowy to payroll database with progress bar + cancel
   7. Rollback: works from current session OR from import history
 
 Import history is persisted to LogsAutomatization/import_history.json.
@@ -114,7 +114,7 @@ def _item(text: str, color: Optional[str] = None, bold: bool = False) -> QTableW
 
 
 class AutomatyzacjaTab(QWidget):
-    """Automatyzacja — CRM report → WaProGang import pipeline."""
+    """Automatyzacja — CRM report → payroll system import pipeline."""
 
     def __init__(
         self,
@@ -859,7 +859,7 @@ class AutomatyzacjaTab(QWidget):
         if self._df_formatted is None:
             return
         del checked
-        self._log("Sprawdzanie pracowników w bazie WaProGang…")
+        self._log("Sprawdzanie pracowników w bazie payroll system…")
         try:
             svc = DatabaseService(self._db_config_provider())
             ok, msg = svc.test_connection()
@@ -1071,7 +1071,7 @@ class AutomatyzacjaTab(QWidget):
                 return int(value)
         except Exception:
             pass
-        # Fallback: today (matches WaPro's GETDATE() convention)
+        # Fallback: today (matches payroll system's GETDATE() convention)
         from datetime import date as _date
         delta = (_date.today() - _date(1800, 12, 28)).days
         return int(delta)
@@ -1161,14 +1161,14 @@ class AutomatyzacjaTab(QWidget):
                     tenant_id=tenant_id,
                 )
                 self._log(
-                    "Rachunki 1:1 CRM↔WaPro: "
+                    "Rachunki 1:1 CRM↔payroll system: "
                     f"CRM paid={rachunki_report.crm_paid_total}, "
                     f"CRM importable={rachunki_report.crm_importable_total}, "
-                    f"WaPro month={rachunki_report.wapro_month_total}, "
+                    f"payroll system month={rachunki_report.wapro_month_total}, "
                     f"found-any-date={rachunki_report.matched_any_date}, "
                     f"same-month={rachunki_report.matched_same_month}, "
                     f"date-mismatch={len(rachunki_report.date_mismatch)}, "
-                    f"missing-in-WaPro={len(rachunki_report.crm_missing_in_wapro)} "
+                    f"missing-in-payroll system={len(rachunki_report.crm_missing_in_wapro)} "
                     f"(importable={len(rachunki_report.crm_missing_importable)}, "
                     f"blocked={len(rachunki_report.crm_missing_blocked)})"
                 )
@@ -1177,12 +1177,12 @@ class AutomatyzacjaTab(QWidget):
                         self._log(
                             f"  DATA RÓŻNA: {crm_bill.nr_rachunku} "
                             f"CRM paid={crm_bill.payment_date}, "
-                            f"WaPro DATA_WYPLATY={wapro_bill.data_wyplaty}"
+                            f"payroll system DATA_WYPLATY={wapro_bill.data_wyplaty}"
                         )
                 if rachunki_report.crm_missing_in_wapro:
                     for item in rachunki_report.crm_missing_in_wapro[:10]:
                         self._log(
-                            f"  CRM NIE MA W WAPRO [{item.status}/{item.reason or 'ok'}]: "
+                            f"  CRM NIE MA W PAYROLL_DB [{item.status}/{item.reason or 'ok'}]: "
                             f"{item.nr_rachunku} {item.worker_name} PESEL={item.pesel}"
                         )
             df_clean = df_to_export(self._df_formatted)
@@ -1315,7 +1315,7 @@ class AutomatyzacjaTab(QWidget):
 
         # ── Build mapping + check-in on main thread ───────────────────────────
         self._save_formatted_file()
-        self._log("Rozpoczynanie importu umów do WaProGang…")
+        self._log("Rozpoczynanie importu umów do payroll system…")
         self._btn_import.setEnabled(False)
         self._btn_cancel.setEnabled(True)
         self._progress_bar.setValue(0)

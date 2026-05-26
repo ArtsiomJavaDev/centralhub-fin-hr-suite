@@ -272,7 +272,7 @@ class SwapCandidate:
 
 
 class LearnedNameCorpus:
-    """Imiona/nazwiska wyuczone z kolumn IMIE_1 i NAZWISKO w WaPro."""
+    """Imiona/nazwiska wyuczone z kolumn IMIE_1 i NAZWISKO w payroll system."""
 
     def __init__(
         self,
