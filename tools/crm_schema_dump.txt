@@ -1,0 +1,199 @@
+﻿
+======================================================================
+TABLE: contracts_zlicen
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  long_term_contract                       tinyint(1)                NO
+  number                                   varchar(255)              YES
+  amount                                   decimal(10,2)             YES
+  amount_for_3_years                       decimal(10,2)             YES
+  start_date                               date                      YES
+  end_date                                 date                      YES
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  client_id                                bigint unsigned           YES
+  pdf                                      varchar(255)              YES
+  subject                                  text                      YES
+  is_for_employee                          tinyint(1)                NO
+  employee_id                              bigint unsigned           YES
+  deleted_at                               timestamp                 YES
+  --- rows: 446
+  --- sample keys: id, tenant_id, long_term_contract, number, amount, amount_for_3_years, start_date, end_date, created_at, updated_at, cli
+
+======================================================================
+TABLE: contracts_dzielo
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  long_term_contract                       tinyint(1)                NO
+  number                                   varchar(255)              YES
+  amount                                   decimal(10,2)             YES
+  amount_for_3_years                       decimal(10,2)             YES
+  start_date                               date                      YES
+  end_date                                 date                      YES
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  client_id                                bigint unsigned           YES
+  pdf                                      varchar(255)              YES
+  subject                                  text                      YES
+  notifications_count                      int unsigned              NO
+  last_notified_at                         datetime                  YES
+  is_for_employee                          tinyint(1)                NO
+  employee_id                              bigint unsigned           YES
+  deleted_at                               timestamp                 YES
+  --- rows: 1269
+  --- sample keys: id, tenant_id, long_term_contract, number, amount, amount_for_3_years, start_date, end_date, created_at, updated_at, cli
+
+======================================================================
+TABLE: act_contract_dzielo
+======================================================================
+  id                                       bigint unsigned           NO
+  url_pdf                                  varchar(255)              NO
+  contracts_dzielo_id                      bigint unsigned           YES
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  --- rows: 1381
+  --- sample keys: id, url_pdf, contracts_dzielo_id, created_at, updated_at
+
+======================================================================
+TABLE: employees
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  name                                     varchar(255)              YES
+  surname                                  varchar(255)              YES
+  id_employee                              varchar(255)              YES
+  user_id                                  bigint unsigned           YES
+  department_id                            bigint unsigned           YES
+  city                                     varchar(255)              YES
+  address                                  varchar(255)              YES
+  postal_code                              varchar(255)              YES
+  date_of_birth                            date                      YES
+  email                                    varchar(255)              YES
+  phone                                    varchar(255)              YES
+  telegram                                 varchar(255)              YES
+  account_manager_id                       bigint unsigned           YES
+  passport_number                          varchar(255)              YES
+  pesel_number                             varchar(255)              YES
+  authority_agency                         varchar(255)              YES
+  bank_accounts                            json                      YES
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  legalisation_id                          bigint unsigned           YES
+  --- rows: 62
+  --- sample keys: id, tenant_id, name, surname, id_employee, user_id, department_id, city, address, postal_code, date_of_birth, email, pho
+
+======================================================================
+TABLE: customers
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  type                                     enum('individual','legal_entity') NO
+  first_name                               text                      YES
+  last_name                                text                      YES
+  company_name                             varchar(255)              YES
+  street                                   text                      YES
+  building_number                          text                      YES
+  apartment                                text                      YES
+  postal_code                              text                      YES
+  city                                     text                      YES
+  country                                  text                      YES
+  tax_number                               text                      YES
+  email                                    text                      YES
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  created_by                               bigint unsigned           YES
+  --- rows: 2198
+  --- sample keys: id, tenant_id, type, first_name, last_name, company_name, street, building_number, apartment, postal_code, city, country
+
+======================================================================
+TABLE: process_salaries
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  salary_request_id                        bigint unsigned           YES
+  status                                   enum('pending','approved') NO
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  --- rows: 11162
+  --- sample keys: id, tenant_id, salary_request_id, status, created_at, updated_at
+
+======================================================================
+TABLE: salary_requests
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  bill_id                                  bigint unsigned           YES
+  message                                  text                      NO
+  currencies                               json                      NO
+  transfer_type                            varchar(255)              NO
+  payment_amount                           varchar(255)              NO
+  status                                   varchar(255)              NO
+  status_change_timestamp                  timestamp                 YES
+  paid_at                                  timestamp                 YES
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  created_by                               bigint unsigned           YES
+  --- rows: 11162
+  --- sample keys: id, tenant_id, bill_id, message, currencies, transfer_type, payment_amount, status, status_change_timestamp, paid_at, cr
+
+======================================================================
+TABLE: bills
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  bill_number                              varchar(255)              YES
+  contract_type                            varchar(255)              NO
+  contract_id                              bigint unsigned           NO
+  account_from                             date                      NO
+  account_till                             date                      NO
+  netto_amount                             decimal(10,2)             NO
+  brutto_amount                            decimal(10,2)             NO
+  vat                                      enum('0','12','32')       NO
+  kup                                      enum('0','20','50')       NO
+  contract_subject                         text                      YES
+  is_student                               tinyint(1)                YES
+  zus_emerytalne                           tinyint(1)                NO
+  zus_chorobowe                            tinyint(1)                NO
+  zus_zdrowotne                            tinyint(1)                NO
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  pdf                                      varchar(255)              YES
+  salary_request_id                        bigint unsigned           YES
+  calculate_type                           varchar(255)              YES
+  act_number                               int unsigned              YES
+  bank_acc                                 text                      YES
+  --- rows: 11162
+  --- sample keys: id, tenant_id, bill_number, contract_type, contract_id, account_from, account_till, netto_amount, brutto_amount, vat, ku
+
+======================================================================
+TABLE: reports
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  type                                     varchar(255)              NO
+  format                                   varchar(255)              NO
+  file_path                                text                      NO
+  start_date                               date                      NO
+  end_date                                 date                      NO
+  department_id                            bigint unsigned           NO
+  created_by                               bigint unsigned           NO
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  --- rows: 859
+  --- sample keys: id, tenant_id, type, format, file_path, start_date, end_date, department_id, created_by, created_at, updated_at
+
+======================================================================
+TABLE: work_results
+======================================================================
+  id                                       bigint unsigned           NO
+  tenant_id                                bigint unsigned           NO
+  contract_id                              bigint unsigned           NO
+  bill_id                                  bigint unsigned           YES
+  created_by                               bigint unsigned           NO
+  created_at                               timestamp                 YES
+  updated_at                               timestamp                 YES
+  contract_type                            varchar(255)              YES
+  --- rows: 10662
+  --- sample keys: id, tenant_id, contract_id, bill_id, created_by, created_at, updated_at, contract_type

@@ -1,0 +1,51 @@
+# Скопируйте этот файл в config.ini и заполните своими данными.
+# НИКОГДА не коммитьте config.ini в git!
+#
+# Copy this file to config.ini and fill in your values.
+# NEVER commit config.ini to git!
+
+[database]
+driver = ODBC Driver 17 for SQL Server
+server = localhost
+database = WAPRO
+username = sa
+; Пароль задаётся через интерфейс приложения (шифруется DPAPI)
+password =
+trusted_connection = yes
+
+[app]
+start_urzad_id = 12
+log_file = importer.log
+data_od = 82290
+strict_od_dnia = no
+; Язык интерфейса: pl или ru
+language = pl
+
+[crm]
+; Адрес SSH-бастиона (IP или hostname)
+ssh_host = YOUR_SSH_BASTION_HOST
+; Имя пользователя SSH
+ssh_user = YOUR_SSH_USER
+; Путь к приватному SSH-ключу
+ssh_key_path = C:\Users\YOUR_USERNAME\.ssh\id_ed25519
+; Hostname AWS RDS (MySQL)
+rds_host = YOUR_RDS_HOST.rds.amazonaws.com
+rds_port = 3306
+local_port = 3307
+mysql_host = 127.0.0.1
+; Имя пользователя MySQL
+mysql_user = YOUR_MYSQL_USER
+; Пароль задаётся через tools/crm_configure.py (шифруется DPAPI)
+mysql_password =
+mysql_database = YOUR_MYSQL_DATABASE
+report_sql =
+
+[crm_api]
+; Базовый URL CRM API (без завершающего слэша)
+base_url = https://YOUR_CRM_DOMAIN/api
+; Токен задаётся через tools/crm_api_configure.py --set-token (шифруется DPAPI)
+token =
+; 0 = все тенанты, 1 = FBA, 2 = FBA Payroll
+tenant_id = 0
+per_page = 500
+timeout_seconds = 60
