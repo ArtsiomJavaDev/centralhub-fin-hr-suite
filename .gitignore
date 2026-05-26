@@ -1,5 +1,6 @@
 # ===== SENSITIVE CONFIG — никогда не коммитить =====
 config.ini
+private.py
 
 # ===== РАБОЧИЕ ДАННЫЕ (PII / операционные логи) =====
 import_history.json

@@ -1,4 +1,7 @@
-"""Load CRM MySQL + SSH tunnel settings from config.ini."""
+"""Load CRM MySQL + SSH tunnel settings.
+
+Priority: private.py  →  config.ini  →  CRM_DEFAULTS (code fallback)
+"""
 from __future__ import annotations
 
 import configparser
@@ -6,28 +9,29 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from secrets_store import decrypt_secret
+from _secrets import get_merged_config
 
 _APP_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = _APP_DIR / "config.ini"
 
 CRM_DEFAULTS: dict[str, str] = {
-    "ssh_host": "",
-    "ssh_user": "",
+    "ssh_host": "51.20.71.10",
+    "ssh_user": "readonly_db",
     "ssh_key_path": str(Path.home() / ".ssh" / "id_ed25519"),
-    "rds_host": "",
+    "rds_host": "fba-production-db.cnacmic68dqe.eu-north-1.rds.amazonaws.com",
     "rds_port": "3306",
     "local_port": "3307",
     "mysql_host": "127.0.0.1",
-    "mysql_user": "",
+    "mysql_user": "readonly_user",
     "mysql_password": "",
-    "mysql_database": "",
+    "mysql_database": "fba_prod_db",
     # SQL returning UDUZ04-like columns (0..12) or named columns mapped below.
     # Use %(year)s and %(month)s if filtering by period.
     "report_sql": "",
 }
 
 CRM_API_DEFAULTS: dict[str, str] = {
-    "base_url": "",
+    "base_url": "https://crmfba.ink/api",
     "token": "",
     # 0 means both tenants. 1 = FBA, 2 = FBA Payroll.
     "tenant_id": "0",
@@ -133,11 +137,18 @@ def ensure_crm_api_section(cfg: configparser.ConfigParser) -> bool:
     return changed
 
 
-def load_crm_settings(config_path: Path | None = None) -> CrmSettings:
+def _load_config_ini_only(config_path: Path | None = None) -> configparser.ConfigParser:
+    """Load config.ini directly (used by save_* functions to avoid writing private.py values back)."""
     path = config_path or CONFIG_PATH
     cfg = configparser.ConfigParser()
     if path.exists():
         cfg.read(path, encoding="utf-8")
+    return cfg
+
+
+def load_crm_settings(config_path: Path | None = None) -> CrmSettings:
+    path = config_path or CONFIG_PATH
+    cfg = get_merged_config(path)
     ensure_crm_section(cfg)
 
     sec = cfg["crm"]
@@ -160,9 +171,7 @@ def load_crm_settings(config_path: Path | None = None) -> CrmSettings:
 
 def load_crm_api_settings(config_path: Path | None = None) -> CrmApiSettings:
     path = config_path or CONFIG_PATH
-    cfg = configparser.ConfigParser()
-    if path.exists():
-        cfg.read(path, encoding="utf-8")
+    cfg = get_merged_config(path)
     ensure_crm_api_section(cfg)
     sec = cfg["crm_api"]
     per_page = int(sec.get("per_page", CRM_API_DEFAULTS["per_page"]))
@@ -184,9 +193,7 @@ def save_crm_api_tenant_id(
     config_path: Path | None = None,
 ) -> None:
     path = config_path or CONFIG_PATH
-    cfg = configparser.ConfigParser()
-    if path.exists():
-        cfg.read(path, encoding="utf-8")
+    cfg = _load_config_ini_only(path)
     ensure_crm_api_section(cfg)
     cfg["crm_api"]["tenant_id"] = str(int(tenant_id))
     with path.open("w", encoding="utf-8") as f:
@@ -201,9 +208,7 @@ def save_crm_api_token(
     from secrets_store import encrypt_secret
 
     path = config_path or CONFIG_PATH
-    cfg = configparser.ConfigParser()
-    if path.exists():
-        cfg.read(path, encoding="utf-8")
+    cfg = _load_config_ini_only(path)
     ensure_crm_api_section(cfg)
     cfg["crm_api"]["token"] = encrypt_secret(plain_token)
     with path.open("w", encoding="utf-8") as f:
@@ -218,9 +223,7 @@ def save_crm_mysql_password(
     from secrets_store import encrypt_secret
 
     path = config_path or CONFIG_PATH
-    cfg = configparser.ConfigParser()
-    if path.exists():
-        cfg.read(path, encoding="utf-8")
+    cfg = _load_config_ini_only(path)
     ensure_crm_section(cfg)
     cfg["crm"]["mysql_password"] = encrypt_secret(plain_password)
     with path.open("w", encoding="utf-8") as f:
@@ -232,9 +235,7 @@ def save_crm_mysql_user(
     config_path: Path | None = None,
 ) -> None:
     path = config_path or CONFIG_PATH
-    cfg = configparser.ConfigParser()
-    if path.exists():
-        cfg.read(path, encoding="utf-8")
+    cfg = _load_config_ini_only(path)
     ensure_crm_section(cfg)
     cfg["crm"]["mysql_user"] = user.strip()
     with path.open("w", encoding="utf-8") as f:

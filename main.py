@@ -435,8 +435,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.resize(1100, 750)
 
-        self.config = configparser.ConfigParser()
-        self.config.read(CONFIG_PATH, encoding="utf-8")
+        from _secrets import get_merged_config as _get_merged_config
+        self.config = _get_merged_config(CONFIG_PATH)
         self._ensure_config_defaults()
         self.language = self.config["app"].get("language", "ru").strip().lower()
         if self.language not in {"ru", "pl"}:

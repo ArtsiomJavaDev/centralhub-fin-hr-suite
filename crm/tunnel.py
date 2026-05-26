@@ -60,7 +60,7 @@ class SshTunnel:
         self.stop()
         raise SshTunnelError(
             f"Туннель не поднялся за {wait_seconds}s на порту {self._settings.local_port}. "
-            "Проверьте IP вашего сервера в whitelist и SSH-ключ."
+            f"Проверьте IP в whitelist сервера {self._settings.ssh_host} и SSH-ключ."
         )
 
     def stop(self) -> None:

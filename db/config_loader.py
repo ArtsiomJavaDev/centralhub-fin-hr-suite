@@ -1,11 +1,14 @@
-"""Load WaPro SQL Server settings from config.ini."""
+"""Load WaPro SQL Server settings.
+
+Priority: private.py  →  config.ini  →  code defaults
+"""
 from __future__ import annotations
 
-import configparser
 from pathlib import Path
 
 from db.config import DbConfig
 from secrets_store import decrypt_secret
+from _secrets import get_merged_config
 
 _APP_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = _APP_DIR / "config.ini"
@@ -13,9 +16,7 @@ CONFIG_PATH = _APP_DIR / "config.ini"
 
 def load_db_config(config_path: Path | None = None) -> DbConfig:
     path = config_path or CONFIG_PATH
-    cfg = configparser.ConfigParser()
-    if path.exists():
-        cfg.read(path, encoding="utf-8")
+    cfg = get_merged_config(path)
     if "database" not in cfg:
         raise RuntimeError(f"Brak sekcji [database] w {path}")
     db = cfg["database"]
