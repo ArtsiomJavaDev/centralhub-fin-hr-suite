@@ -1,0 +1,17 @@
+"""Local privacy-sensitive PESEL lists.
+
+Copy this file to `_sensitive_lists.py` and fill it locally.
+Never commit `_sensitive_lists.py`: it is ignored by git.
+"""
+
+# PESEL values excluded from the main UZ/UD export and exported separately.
+UMOWY_EXPORT_EXCLUDE_PESELS = [
+    # "00000000000",
+]
+
+# PESEL values that require special chorobowe handling when the source file
+# does not expose an explicit CRM flag.
+SPECIAL_CHOROBOWE_PESELS = [
+    # "00000000000",
+]
+

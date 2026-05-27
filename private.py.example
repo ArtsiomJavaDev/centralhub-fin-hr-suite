@@ -1,0 +1,53 @@
+"""
+Single source of truth for all sensitive configuration.
+
+SETUP: Copy this file to private.py and fill in your values.
+       private.py is git-ignored — never commit it.
+
+Passwords/tokens are managed by the app and stored as Windows DPAPI blobs
+(dpapi:...). Leave them empty here — the app will write encrypted values
+to config.ini on first use and _secrets.py will pick them up from there.
+"""
+
+# ── payroll SQL Server ───────────────────────────────────────────────────────
+DATABASE = {
+    "driver":             "ODBC Driver 17 for SQL Server",
+    "server":             "localhost",        # SQL Server hostname or IP
+    "database":           "PAYROLL_DB",            # payroll system database name
+    "username":           "sa",               # SQL login
+    "password":           "",                 # set via app Settings tab
+    "trusted_connection": "yes",
+}
+
+# ── CRM MySQL via SSH tunnel ───────────────────────────────────────────────
+CRM = {
+    "ssh_host":       "YOUR_SSH_BASTION_IP",
+    "ssh_user":       "YOUR_SSH_USER",
+    "ssh_key_path":   r"C:\Users\YOUR_USERNAME\.ssh\id_ed25519",
+    "rds_host":       "YOUR_RDS_HOST.rds.amazonaws.com",
+    "rds_port":       "3306",
+    "local_port":     "3307",
+    "mysql_host":     "127.0.0.1",
+    "mysql_user":     "YOUR_MYSQL_USER",
+    "mysql_password": "",                     # set via tools/crm_configure.py
+    "mysql_database": "YOUR_MYSQL_DATABASE",
+    "report_sql":     "",
+}
+
+# ── CRM REST API ───────────────────────────────────────────────────────────
+CRM_API = {
+    "base_url":        "https://YOUR_CRM_DOMAIN/api",
+    "token":           "",                    # set via tools/crm_api_configure.py --set-token
+    "tenant_id":       "0",                   # 0 = all tenants, 1 = FBA, 2 = FBA Payroll
+    "per_page":        "500",
+    "timeout_seconds": "60",
+}
+
+# ── App settings ───────────────────────────────────────────────────────────
+APP = {
+    "language":        "pl",                  # pl or ru
+    "start_urzad_id":  "12",
+    "data_od":         "82290",
+    "strict_od_dnia":  "no",
+    "log_file":        "importer.log",
+}

@@ -1,0 +1,62 @@
+# ===== SENSITIVE CONFIG — никогда не коммитить =====
+config.ini
+private.py
+_sensitive_lists.py
+.env
+.env.*
+*.secret
+*.secrets
+
+# ===== РАБОЧИЕ ДАННЫЕ (PII / операционные логи) =====
+import_history.json
+Logi/
+LogsAutomatization/
+ImportFiles/
+Eksport/
+swapped_candidates.csv
+*.log
+*.xlsx
+*.xls
+*.csv
+*schema_dump*.txt
+*_dump.txt
+
+# ===== PYTHON =====
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+# артефакт редактора
+=
+
+# ===== SSH ключи (на случай если попадут в проект) =====
+*.pem
+*.key
+id_rsa
+id_ed25519
+id_ecdsa
